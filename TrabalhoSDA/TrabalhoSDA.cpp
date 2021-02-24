@@ -39,26 +39,7 @@ typedef unsigned* CAST_LPDWORD;
 #define TAMREQ     9  // 6+2 caracteres + 1 separador
 #define TAMPOS    41  // 6+2+6+5+5+5+6 caracteres + 6 separadores/
 
-// Estruturas
-typedef struct TIPO11 {
-	int nseq = 1;
-	int tipo = 11;
-	int taxa = 0;
-	float potencia = 0.0;
-	float tempTrans = 0.0;
-	float tempRoda = 0.0;
 
-}TIPO11; // definição do tipo 11
-
-typedef struct TIPO33 {
-	int nseq = 1;
-	int tipo = 33;
-}TIPO33; // definição do tipo 33
-
-typedef struct TIPO99 {
-	int nseq = 1;
-	int tipo = 99;
-}TIPO99; // definição do tipo 99
 
 //-----Variáveis Globais----//
 int nseq = 1, Tecla=0;
@@ -181,34 +162,38 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 
 }
+
 char* novaMensagem11(int* nseq) {
 	string msg;
-	char* auxMsg;
-	int aux = rand() % 9999;
-	TIPO11 m1;
-	sprintf(msg, "%05d", m1.nseq);
+	char enviar[TAMSTATUS]="      ";
+	int aux = rand() % 999999;
+
+	sprintf(msg, "%05d", nseq);
 	msg += "$";
 	msg += to_string(11) + "$";
-	msg += to_string(rand() % 999999) + "$";
+	msg += to_string(aux) + "$";
+	aux = rand() % 9999;
 	msg += to_string((float)aux / 10) + "$";
 	aux = rand() % 9999;
-	msg += to_string(m1.tempTrans) + "$";
+	msg += to_string((float)aux / 10) + "$";
 	aux = rand() % 9999;
 	msg += to_string((float)aux / 10);
-	auxMsg = &msg[0]; //Não tenho certeza disso aqui
+
 	*nseq++;
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
 
-	return auxMsg;
+	
+
+	return enviar;
 };
 
 char* novaMensagem33(int* nseq) {
 	string msg;
-	char* auxMsg;
-	TIPO33 m1;
-	sprintf(msg, "%05d", m1.nseq);
+	char enviar[TAMREQ] = "     ";
+
+	sprintf(msg, "%05d", nseq);
 	msg += "$";
 	msg += to_string(33);
 
@@ -216,17 +201,19 @@ char* novaMensagem33(int* nseq) {
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
-	auxMsg = &msg[0]; //Não tenho certeza disso aqui
 
-	return auxMsg;
+
+	
+	
+
+	return enviar;
 };
 
 char* novaMensagem99(int* nseq) {
 	string msg;
-	TIPO99 m1;
-	char *auxMsg;
+	char enviar[TAMACK] = "      ";
 
-	sprintf(msg, "%05d", m1.nseq);
+	sprintf(msg, "%05d", nseq);
 	msg += "$";
 	msg += to_string(99);
 
@@ -234,9 +221,9 @@ char* novaMensagem99(int* nseq) {
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
-	auxMsg = &msg[0]; //Não tenho certeza disso aqui
 
-	return auxMsg;
+	
 
+
+	return enviar;
 };
-
