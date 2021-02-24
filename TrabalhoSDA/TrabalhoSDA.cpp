@@ -72,15 +72,69 @@ int main(int argc, char **argv)
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
-    int statusSocket;
-    //SOCKADDR_IN ServerAddr;
+	int statusSocket, port;
+	char* ipaddr;
+    SOCKADDR_IN ServerAddr;
 
     //Variáveis do Temporizador//
     HANDLE hTimer;
     LARGE_INTEGER Present;
+	// Verifia se o que foi passado na linha de comando está correto
+	if (argc != 3) {
+		printf("Valores inválidos, reinicie o cliente...\n");
+		exit(0);
+	}
+	ipaddr = argv[1];
+	port = atoi(argv[2]);
 
+	//Criar Temporizador
 
+	// Inicializa Winsock versão 2.2
+	statusSocket = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (statusSocket != 0) {
+		printf("Falha na inicializacao do Winsock 2! Erro  = %d\n", WSAGetLastError());
+		WSACleanup();
+		exit(0);
+	}
+	// Estrutura SOCKADDR_IN
+	ServerAddr.sin_family = AF_INET;
+	ServerAddr.sin_port = htons(port);
+	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
+	while (true) {
+		// Criação do Socket
+		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		//Mensagens de erro
+		if (s == INVALID_SOCKET) {
+			statusSocket = WSAGetLastError();
+			if (statusSocket == WSAENETDOWN) {
+				printf("Rede ou servidor de sockets inacessíveis!\n");
+			}
+			else {
+				printf("Codigo de erro = %d\n", statusSocket);
+			}
+			WSACleanup();
+			exit(0);
+		}
+		// Estabelece a conexão com o servidor
+		printf("Iniciando conexão com o Sistema de Mapeamento 3D...\n");
+		statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
+		if (statusSocket == SOCKET_ERROR) {
+			if (WSAGetLastError() == WSAEHOSTUNREACH) {
+				/*//printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
+				else {
+					Sleep(5000);
+					continue;
+				}*/
+			}
+			else {
+				printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
+				WSACleanup();
+				closesocket(s);
+				exit(0);
+			}
+		}
+	}
     
     return(0);
 }
