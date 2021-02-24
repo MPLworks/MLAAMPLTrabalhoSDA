@@ -42,30 +42,12 @@ typedef unsigned* CAST_LPDWORD;
 //-----Variáveis Globais----//
 int nseq = 1;
 
-//-----Estruturas 
-typedef struct TIPO11 {
-	int nseq = 1;
-	int tipo = 11;
-	int taxa = 0;
-	float potencia = 0.0;
-	float tempTrans = 0.0;
-	float tempRoda = 0.0;
 
-}TIPO11; // definição do tipo 11
 
-typedef struct TIPO33 {
-	int nseq = 1;
-	int tipo = 33;
-}TIPO33; // definição do tipo 33
-
-typedef struct TIPO99 {
-	int nseq = 1;
-	int tipo = 99;
-}TIPO99; // definição do tipo 99
 // Funções de Criação das Mensagens
-TIPO11  novaMensagem11();
-TIPO33  novaMensagem33();
-TIPO99  novaMensagem99();
+char*  novaMensagem11(int* nseq);
+char*  novaMensagem33(int* nseq);
+char*  novaMensagem99(int* nseq);
 
 int main(int argc, char **argv)
 {
@@ -138,4 +120,60 @@ int main(int argc, char **argv)
     
     return(0);
 }
+
+
+char* novaMensagem11(int* nseq) {
+	string msg;
+	int aux = rand() % 9999;
+
+	sprintf(msg, "%05d", m1.nseq);
+	msg += "$";
+	msg += to_string(11) + "$";
+	msg += to_string(rand() % 999999) + "$";
+	msg += to_string((float)aux / 10) + "$";
+	aux = rand() % 9999;
+	msg += to_string(m1.tempTrans) + "$";
+	aux = rand() % 9999;
+	msg += to_string((float)aux / 10;);
+
+	*nseq++;
+	if (*nseq == 99999) {
+		*nseq = 1;
+	}
+
+	return msg;
+};
+
+char* novaMensagem33(int* nseq) {
+	string msg;
+
+	sprintf(msg, "%05d", m1.nseq);
+	msg += "$";
+	msg += to_string(33);
+
+	*nseq++;
+	if (*nseq == 99999) {
+		*nseq = 1;
+	}
+
+
+	return msg;
+};
+
+char* novaMensagem99(int* nseq) {
+	string msg;
+
+	sprintf(msg, "%05d", m1.nseq);
+	msg += "$";
+	msg += to_string(99);
+
+	*nseq++;
+	if (*nseq == 99999) {
+		*nseq = 1;
+	}
+
+
+	return msg;
+
+};
 
