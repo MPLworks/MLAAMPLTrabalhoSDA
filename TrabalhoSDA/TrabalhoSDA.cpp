@@ -37,11 +37,32 @@ typedef unsigned* CAST_LPDWORD;
 #define TAMSTATUS 37  // 6+2+6+6+6+6 caracteres + 5 separadores
 #define TAMACK     9  // 6+2 caracteres + 1 separador
 #define TAMREQ     9  // 6+2 caracteres + 1 separador
-#define TAMPOS    41  // 6+2+6+5+5+5+6 caracteres + 6 separadores
+#define TAMPOS    41  // 6+2+6+5+5+5+6 caracteres + 6 separadores/
+
+// Estruturas
+typedef struct TIPO11 {
+	int nseq = 1;
+	int tipo = 11;
+	int taxa = 0;
+	float potencia = 0.0;
+	float tempTrans = 0.0;
+	float tempRoda = 0.0;
+
+}TIPO11; // definição do tipo 11
+
+typedef struct TIPO33 {
+	int nseq = 1;
+	int tipo = 33;
+}TIPO33; // definição do tipo 33
+
+typedef struct TIPO99 {
+	int nseq = 1;
+	int tipo = 99;
+}TIPO99; // definição do tipo 99
 
 //-----Variáveis Globais----//
-int nseq = 1;
-
+int nseq = 1, Tecla=0;
+HANDLE hEventoESC, hEventoP;
 
 
 // Funções de Criação das Mensagens
@@ -49,16 +70,27 @@ char*  novaMensagem11(int* nseq);
 char*  novaMensagem33(int* nseq);
 char*  novaMensagem99(int* nseq);
 
+//Threads
+DWORD WINAPI ThreadTeclado(LPVOID);
 int main(int argc, char **argv)
-{
+{	
+	SetConsoleTitle(L"Aplicação de Software - Cliente Socket");
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
 	int statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
+	//Variáveis Threads Secundárias
+	HANDLE hThreadTeclado;
+	DWORD dwThreadTeclado;
+	DWORD dwExitCode = 0;
 
-    //Variáveis do Temporizador//
+	// Criação de Threads
+	hThreadTeclado = (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
+	if (hThreadTeclado) 	cout << "Thread de leitura do teclado criada com Id=" << dwThreadTeclado << "\n";
+
+	//Variáveis do Temporizador//
     HANDLE hTimer;
     LARGE_INTEGER Present;
 	// Verifia se o que foi passado na linha de comando está correto
@@ -121,11 +153,39 @@ int main(int argc, char **argv)
     return(0);
 }
 
+DWORD WINAPI ThreadTeclado(LPVOID index) {
+	// Eventos
+	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
+	hEventoP = CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+	int status; 
+	do {
+		cout << "\n Tecle <p> para simular o evento de solitacao de mensagem \n <ESC> para sair \n";
+		Tecla = _getch();
 
+		if (Tecla == p) {
+			status = SetEvent(hEventoP);
+			cout << "\n Evento P ocorreu \n";
+			Tecla = 0;
+		}
+		else if (Tecla == ESC) {
+			status = SetEvent(hEventoESC);
+			cout << "\n Evento ESC ocorreu \n";
+		}
+		else {
+			cout << "\n Evento nao cadastrado \n";
+			Tecla = 0;
+		}
+
+
+	} while (Tecla != ESC);
+
+
+}
 char* novaMensagem11(int* nseq) {
 	string msg;
+	char* auxMsg;
 	int aux = rand() % 9999;
-
+	TIPO11 m1;
 	sprintf(msg, "%05d", m1.nseq);
 	msg += "$";
 	msg += to_string(11) + "$";
@@ -134,19 +194,20 @@ char* novaMensagem11(int* nseq) {
 	aux = rand() % 9999;
 	msg += to_string(m1.tempTrans) + "$";
 	aux = rand() % 9999;
-	msg += to_string((float)aux / 10;);
-
+	msg += to_string((float)aux / 10);
+	auxMsg = &msg[0]; //Não tenho certeza disso aqui
 	*nseq++;
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
 
-	return msg;
+	return auxMsg;
 };
 
 char* novaMensagem33(int* nseq) {
 	string msg;
-
+	char* auxMsg;
+	TIPO33 m1;
 	sprintf(msg, "%05d", m1.nseq);
 	msg += "$";
 	msg += to_string(33);
@@ -155,13 +216,15 @@ char* novaMensagem33(int* nseq) {
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
+	auxMsg = &msg[0]; //Não tenho certeza disso aqui
 
-
-	return msg;
+	return auxMsg;
 };
 
 char* novaMensagem99(int* nseq) {
 	string msg;
+	TIPO99 m1;
+	char *auxMsg;
 
 	sprintf(msg, "%05d", m1.nseq);
 	msg += "$";
@@ -171,9 +234,9 @@ char* novaMensagem99(int* nseq) {
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
+	auxMsg = &msg[0]; //Não tenho certeza disso aqui
 
-
-	return msg;
+	return auxMsg;
 
 };
 
