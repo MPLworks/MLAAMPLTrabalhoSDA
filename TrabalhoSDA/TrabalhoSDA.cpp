@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	ServerAddr.sin_port = htons(port);
 	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
-	while (true) {
+	do{
 		// Criação do Socket
 		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		//Mensagens de erro
@@ -148,7 +148,35 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 		}
-	}
+		while (true) {
+			int tipo;
+			DWORD ret;
+			HANDLE hEvento[3];
+
+			hEvento[0] = hTimer;
+			hEvento[1] = hEventoP;
+			//hEvento[2] = hEventoACK;
+
+
+			ret = WaitForMultipleObjects(3,hEvento,false,INFINITE);
+
+			tipo = ret - WAIT_OBJECT_0;
+
+
+			if (tipo == 0) {
+			//Envio mensagem tipo 11
+			}
+			else if (tipo == 1) {}
+			else if (tipo == 2) {}
+
+			
+		}
+
+	} while (Tecla != ESC);
+
+	//Fechar Handles
+	CloseHandle(hTimer);
+	CloseHandle(hThreadTeclado);
     
     return(0);
 }
@@ -178,7 +206,8 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 
 	} while (Tecla != ESC);
-
+	_endthreadex((DWORD)index);
+	return (0);
 
 }
 char* novaMensagem11(int* nseq) {
