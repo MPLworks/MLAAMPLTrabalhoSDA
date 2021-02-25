@@ -143,12 +143,20 @@ int main(int argc, char **argv)
 
 			tipo = ret - WAIT_OBJECT_0;
 
-
+			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 			if (tipo == 0) {
 			//Envio mensagem tipo 11
+				//recv 22 aqui dentro
 			}
-			else if (tipo == 1) {}
-			else if (tipo == 2) {}
+			else if (tipo == 1) {
+			//Enviar mensagem 33
+				//Esperar msg 55 -> Setar ACK
+
+
+			}
+			else if (tipo == 2) {
+			// Enviar msg 99 que é o ack
+			}
 
 			
 		}
@@ -241,7 +249,7 @@ char* novaMensagem33(int* nseq) {
 char* novaMensagem99(int* nseq) {
 	string msg;
 	char enviar[TAMACK] = "      ";
-
+	
 	sprintf(msg, "%05d", nseq);
 	msg += "$";
 	msg += to_string(99);
@@ -250,7 +258,6 @@ char* novaMensagem99(int* nseq) {
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
-
 	
 
 
