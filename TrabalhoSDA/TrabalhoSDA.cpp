@@ -53,9 +53,10 @@ char*  novaMensagem99(int* nseq);
 
 //Threads
 DWORD WINAPI ThreadTeclado(LPVOID);
+
 int main(int argc, char **argv)
 {	
-	SetConsoleTitle(L"Aplicação de Software - Cliente Socket");
+	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
@@ -79,13 +80,16 @@ int main(int argc, char **argv)
 	Present.QuadPart = -(10000 * 200);
 	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
-	// Verifia se o que foi passado na linha de comando está correto
-	if (argc != 3) {
+	
+	// Verifica se o que foi passado na linha de comando está correto
+	/*if (argc != 3) {
 		printf("Valores inválidos, reinicie o cliente...\n");
 		exit(0);
-	}
+	}*/
 	ipaddr = argv[1];
-	port = atoi(argv[2]);
+	port = 3045;
+	//ipaddr = argv[1];
+	//port = atoi(argv[2]);
 
 	//Criar Temporizador
 
@@ -99,7 +103,7 @@ int main(int argc, char **argv)
 	// Estrutura SOCKADDR_IN
 	ServerAddr.sin_family = AF_INET;
 	ServerAddr.sin_port = htons(port);
-	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
+	//ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
 	while (true) {
 		// Criação do Socket
@@ -117,7 +121,7 @@ int main(int argc, char **argv)
 			exit(0);
 		}
 		// Estabelece a conexão com o servidor
-		printf("Iniciando conexão com o Sistema de Mapeamento 3D...\n");
+		printf("Iniciando conexao com o Sistema de Mapeamento 3D...\n");
 		statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
 		if (statusSocket == SOCKET_ERROR) {
 			if (WSAGetLastError() == WSAEHOSTUNREACH) {
@@ -152,14 +156,39 @@ int main(int argc, char **argv)
 			if (tipo == 0) {
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
+				char *msg;
+				msg = novaMensagem11(&nseq);
+				statusSocket = send(s, msg, TAMSTATUS, 0);
+				//Verificar status e printar na tela
+				//
+				
+				statusSocket = recv(s, msg, TAMACK, 0);
+				if (statusSocket == TAMACK) {
+					//verificar código e talvez do nseq
+				}
+
 			}
 			else if (tipo == 1) {
 			//Enviar mensagem 33
 				//Esperar msg 55 -> Setar ACK
+				char* msg;
+				msg = novaMensagem33(&nseq);
+				statusSocket = send(s, msg, TAMREQ, 0);
+				//Verificar status e printar na tela
+				//
 
+				statusSocket = recv(s, msg, TAMPOS, 0);
+				if (statusSocket == TAMPOS){
+					//verificar código e talvez do nseq
+					//s
+					//Se tiver certo setar evento de ACK
+				}
 
 			}
 			else if (tipo == 2) {
+				char* msg;
+				msg = novaMensagem99(&nseq);
+				statusSocket = send(s, msg, TAMACK, 0);
 			// Enviar msg 99 que é o ack
 			}
 
@@ -167,6 +196,10 @@ int main(int argc, char **argv)
 		}
 
 	} while (Tecla != ESC);
+
+	printf("Finalizando conexão....\n");
+	closesocket(s);
+	WSACleanup();
 
 	//Fechar Handles
 	CloseHandle(hTimer);
