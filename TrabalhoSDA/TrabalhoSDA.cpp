@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
-	int statusSocket, port;
+	int status,statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
 	//Variáveis Threads Secundárias
@@ -74,6 +74,11 @@ int main(int argc, char **argv)
 	//Variáveis do Temporizador//
     HANDLE hTimer;
     LARGE_INTEGER Present;
+
+	hTimer= CreateWaitableTimer(NULL, FALSE, L"Timer");
+	Present.QuadPart = -(10000 * 200);
+	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+
 	// Verifia se o que foi passado na linha de comando está correto
 	if (argc != 3) {
 		printf("Valores inválidos, reinicie o cliente...\n");
