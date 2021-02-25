@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
-	int statusSocket, port;
+	int status,statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
 	//Variáveis Threads Secundárias
@@ -74,6 +74,11 @@ int main(int argc, char **argv)
 	//Variáveis do Temporizador//
     HANDLE hTimer;
     LARGE_INTEGER Present;
+
+	hTimer= CreateWaitableTimer(NULL, FALSE, L"Timer");
+	Present.QuadPart = -(10000 * 200);
+	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+
 	// Verifia se o que foi passado na linha de comando está correto
 	if (argc != 3) {
 		printf("Valores inválidos, reinicie o cliente...\n");
@@ -96,7 +101,7 @@ int main(int argc, char **argv)
 	ServerAddr.sin_port = htons(port);
 	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
-	do{
+	while (true) {
 		// Criação do Socket
 		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		//Mensagens de erro
@@ -196,16 +201,19 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 	} while (Tecla != ESC);
 	_endthreadex((DWORD)index);
-	return (0);
+	return(0);
 
 }
 
+
 char* novaMensagem11(int* nseq) {
 	string msg;
-	char enviar[TAMSTATUS]="      ";
+	char parte[5];
+	char texto[TAMSTATUS] = "      ";
 	int aux = rand() % 999999;
 
-	sprintf(msg, "%05d", nseq);
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(11) + "$";
 	msg += to_string(aux) + "$";
@@ -221,45 +229,64 @@ char* novaMensagem11(int* nseq) {
 		*nseq = 1;
 	}
 
-	
 
-	return enviar;
-};
+	strcpy(texto, msg.c_str());
+
+	return texto;
+}
 
 char* novaMensagem33(int* nseq) {
 	string msg;
-	char enviar[TAMREQ] = "     ";
+	char parte[5];
+	char texto[TAMREQ];
+	int j;
 
-	sprintf(msg, "%05d", nseq);
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(33);
 
 	*nseq++;
+
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
 
+	strcpy(texto, msg.c_str());
 
-	
-	
 
-	return enviar;
-};
+
+
+
+	return texto;
+
+
+
+
+}
 
 char* novaMensagem99(int* nseq) {
 	string msg;
-	char enviar[TAMACK] = "      ";
-	
-	sprintf(msg, "%05d", nseq);
+	char parte[5];
+	char texto[TAMREQ];
+	int j;
+
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(99);
 
 	*nseq++;
+
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
-	
+
+	strcpy(texto, msg.c_str());
 
 
-	return enviar;
-};
+	return texto;
+
+
+}
+
