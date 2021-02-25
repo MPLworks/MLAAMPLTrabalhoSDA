@@ -159,16 +159,20 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 
 	} while (Tecla != ESC);
-
+	_endthreadex((DWORD)index);
+	return(0);
 
 }
 
+
 char* novaMensagem11(int* nseq) {
 	string msg;
-	char enviar[TAMSTATUS]="      ";
+	char parte[5];
+	char texto[TAMSTATUS] = "      ";
 	int aux = rand() % 999999;
 
-	sprintf(msg, "%05d", nseq);
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(11) + "$";
 	msg += to_string(aux) + "$";
@@ -184,46 +188,64 @@ char* novaMensagem11(int* nseq) {
 		*nseq = 1;
 	}
 
-	
 
-	return enviar;
-};
+	strcpy(texto, msg.c_str());
+
+	return texto;
+}
 
 char* novaMensagem33(int* nseq) {
 	string msg;
-	char enviar[TAMREQ] = "     ";
+	char parte[5];
+	char texto[TAMREQ];
+	int j;
 
-	sprintf(msg, "%05d", nseq);
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(33);
 
 	*nseq++;
+
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
 
+	strcpy(texto, msg.c_str());
 
-	
-	
 
-	return enviar;
-};
+
+
+
+	return texto;
+
+
+
+
+}
 
 char* novaMensagem99(int* nseq) {
 	string msg;
-	char enviar[TAMACK] = "      ";
+	char parte[5];
+	char texto[TAMREQ];
+	int j;
 
-	sprintf(msg, "%05d", nseq);
+	sprintf(parte, "%05d", *nseq);
+	msg = parte;
 	msg += "$";
 	msg += to_string(99);
 
 	*nseq++;
+
 	if (*nseq == 99999) {
 		*nseq = 1;
 	}
 
-	
+	strcpy(texto, msg.c_str());
 
 
-	return enviar;
-};
+	return texto;
+
+
+}
+
