@@ -51,12 +51,6 @@ char*  novaMensagem11(int nseq);
 char*  novaMensagem33(int nseq);
 char*  novaMensagem99(int nseq);
 
-//Handles 
-HANDLE hEventos[2];
-HANDLE hTimer;
-LARGE_INTEGER Present;
-//hEvento[2] = hEventoACK;
-//Threads
 DWORD WINAPI ThreadTeclado(LPVOID index);
 
 DWORD WINAPI OPCClient (LPVOID index);
@@ -76,6 +70,9 @@ int main(int argc, char **argv)
 	DWORD dwRet;
 	DWORD dwThreadTeclado, dwThreadOPC;
 	DWORD dwExitCode = 0;
+	//Variaveis timer
+	HANDLE hTimer;
+	LARGE_INTEGER Present;
 
 	// Criação de Threads
 	hThread[0]= (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
@@ -87,7 +84,7 @@ int main(int argc, char **argv)
 	//Variáveis do Temporizador//
     
 
-	hEventos[0]= CreateWaitableTimer(NULL, FALSE, L"Timer");
+	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
 	Present.QuadPart = -(10000 * 200);
 	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
@@ -115,7 +112,7 @@ int main(int argc, char **argv)
 	ServerAddr.sin_port = htons(port);
 	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
-	while (true) {
+	do{
 		// Criação do Socket
 		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		//Mensagens de erro
@@ -151,6 +148,10 @@ int main(int argc, char **argv)
 		while (true) {
 			int tipo;
 			DWORD ret;
+			HANDLE hEventos[2];
+			hEventos[0] = hTimer;
+			hEventos[1] = hEventoP;
+
 			ret = WaitForMultipleObjects(2,hEventos,FALSE,INFINITE);
 			cout << "UAI\n";
 			tipo = ret - WAIT_OBJECT_0;
@@ -237,15 +238,16 @@ int main(int argc, char **argv)
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
 	// Eventos
-	hEventoESC = CreateEvent(NULL, TRUE, TRUE, L"EventoESC"); // reset manual
-	hEventos[1] = CreateEvent(NULL, TRUE, FALSE, L"EventoP"); // reset automatico
+	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
+	hEventoP= CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+
 	int status; 
 	do {
 		cout << "\n Tecle <p> para simular o evento de solitacao de mensagem \n <ESC> para sair \n";
 		Tecla = _getch();
 
 		if (Tecla == p) {
-			status = SetEvent(hEventos[1]);
+			status = SetEvent(hEventoP);
 			cout << "\n Evento P ocorreu \n";
 			Tecla = 0;
 		}
