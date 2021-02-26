@@ -47,12 +47,14 @@ HANDLE hEventoESC, hEventoP;
 
 
 // Funções de Criação das Mensagens
-char*  novaMensagem11(int* nseq);
-char*  novaMensagem33(int* nseq);
-char*  novaMensagem99(int* nseq);
+char*  novaMensagem11(int nseq);
+char*  novaMensagem33(int nseq);
+char*  novaMensagem99(int nseq);
 
 //Threads
-DWORD WINAPI ThreadTeclado(LPVOID);
+DWORD WINAPI ThreadTeclado(LPVOID index);
+
+DWORD WINAPI OPCClient (LPVOID index);
 
 int main(int argc, char **argv)
 {	
@@ -64,13 +66,18 @@ int main(int argc, char **argv)
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
 	//Variáveis Threads Secundárias
-	HANDLE hThreadTeclado;
-	DWORD dwThreadTeclado;
+	int j;
+	HANDLE hThread[2];
+	DWORD dwRet;
+	DWORD dwThreadTeclado, dwThreadOPC;
 	DWORD dwExitCode = 0;
 
 	// Criação de Threads
-	hThreadTeclado = (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
-	if (hThreadTeclado) 	cout << "Thread de leitura do teclado criada com Id=" << dwThreadTeclado << "\n";
+	hThread[0]= (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
+	if (hThread[0]) 	cout << "Thread de leitura do teclado criada com Id=" << dwThreadTeclado << "\n";
+
+	hThread[1] = (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)OPCClient, NULL, 0, (CAST_LPDWORD)&dwThreadOPC);
+	if (hThread[1]) 	cout << "Thread do OPC Client criada com Id=" << dwThreadOPC << "\n";
 
 	//Variáveis do Temporizador//
     HANDLE hTimer;
@@ -148,7 +155,7 @@ int main(int argc, char **argv)
 			//hEvento[2] = hEventoACK;
 
 
-			ret = WaitForMultipleObjects(3,hEvento,false,INFINITE);
+			ret = WaitForMultipleObjects(3,hEvento,FALSE,INFINITE);
 
 			tipo = ret - WAIT_OBJECT_0;
 
@@ -157,7 +164,11 @@ int main(int argc, char **argv)
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
 				char *msg;
-				msg = novaMensagem11(&nseq);
+				msg = novaMensagem11(nseq);
+				nseq++;
+				if (nseq == 99999) {
+					nseq = 1;
+				}
 				statusSocket = send(s, msg, TAMSTATUS, 0);
 				//Verificar status e printar na tela
 				//
@@ -172,7 +183,11 @@ int main(int argc, char **argv)
 			//Enviar mensagem 33
 				//Esperar msg 55 -> Setar ACK
 				char* msg;
-				msg = novaMensagem33(&nseq);
+				msg = novaMensagem33(nseq);
+				nseq++;
+				if (nseq == 99999) {
+					nseq = 1;
+				}
 				statusSocket = send(s, msg, TAMREQ, 0);
 				//Verificar status e printar na tela
 				//
@@ -187,7 +202,11 @@ int main(int argc, char **argv)
 			}
 			else if (tipo == 2) {
 				char* msg;
-				msg = novaMensagem99(&nseq);
+				msg = novaMensagem99(nseq);
+				nseq++;
+				if (nseq == 99999) {
+					nseq = 1;
+				}
 				statusSocket = send(s, msg, TAMACK, 0);
 			// Enviar msg 99 que é o ack
 			}
@@ -201,9 +220,20 @@ int main(int argc, char **argv)
 	closesocket(s);
 	WSACleanup();
 
+	// Encerrando as threads 
+	dwRet = WaitForMultipleObjects(2, hThread, TRUE, INFINITE);
+	//CheckForError((dwRet >= WAIT_OBJECT_0)&& (dwRet < WAIT_OBJECT_0 + 5));
+	for (j = 0; j < 2; j++) {
+		status = GetExitCodeThread(&hThread[j], &dwExitCode);
+		cout << "thread " << j << " terminou: codigo " << dwExitCode << "\n";
+		CloseHandle(hThread[j]);	// apaga referência ao objeto
+	}  // for 
+
+
+
 	//Fechar Handles
 	CloseHandle(hTimer);
-	CloseHandle(hThreadTeclado);
+	
     
     return(0);
 }
@@ -239,13 +269,13 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 }
 
 
-char* novaMensagem11(int* nseq) {
+char* novaMensagem11(int nseq) {
 	string msg;
 	char parte[5];
 	char texto[TAMSTATUS] = "      ";
 	int aux = rand() % 999999;
 
-	sprintf(parte, "%05d", *nseq);
+	sprintf(parte, "%05d", nseq);
 	msg = parte;
 	msg += "$";
 	msg += to_string(11) + "$";
@@ -257,33 +287,23 @@ char* novaMensagem11(int* nseq) {
 	aux = rand() % 9999;
 	msg += to_string((float)aux / 10);
 
-	*nseq++;
-	if (*nseq == 99999) {
-		*nseq = 1;
-	}
-
 
 	strcpy(texto, msg.c_str());
 
 	return texto;
 }
 
-char* novaMensagem33(int* nseq) {
+char* novaMensagem33(int nseq) {
 	string msg;
 	char parte[5];
 	char texto[TAMREQ];
-	int j;
+	
 
-	sprintf(parte, "%05d", *nseq);
+	sprintf(parte, "%05d", nseq);
 	msg = parte;
 	msg += "$";
 	msg += to_string(33);
 
-	*nseq++;
-
-	if (*nseq == 99999) {
-		*nseq = 1;
-	}
 
 	strcpy(texto, msg.c_str());
 
@@ -298,23 +318,17 @@ char* novaMensagem33(int* nseq) {
 
 }
 
-char* novaMensagem99(int* nseq) {
+char* novaMensagem99(int nseq) {
 	string msg;
 	char parte[5];
 	char texto[TAMREQ];
-	int j;
+	
 
-	sprintf(parte, "%05d", *nseq);
+	sprintf(parte, "%05d", nseq);
 	msg = parte;
 	msg += "$";
 	msg += to_string(99);
 
-	*nseq++;
-
-	if (*nseq == 99999) {
-		*nseq = 1;
-	}
-
 	strcpy(texto, msg.c_str());
 
 
@@ -323,3 +337,39 @@ char* novaMensagem99(int* nseq) {
 
 }
 
+DWORD WINAPI OPCClient(LPVOID index) {
+	HANDLE hEvento = hEventoESC;
+	DWORD ret;
+	int encerramento=1;
+
+
+	do {
+		ret = WaitForSingleObject(hEvento,100);
+		encerramento= ret - WAIT_OBJECT_0;
+
+
+
+
+
+
+
+
+
+	}while (encerramento != 0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_endthreadex((DWORD)index);
+	return(0);
+
+}
