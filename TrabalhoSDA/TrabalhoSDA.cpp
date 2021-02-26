@@ -50,7 +50,11 @@ HANDLE hEventoESC, hEventoP;
 char*  novaMensagem11(int* nseq);
 char*  novaMensagem33(int* nseq);
 char*  novaMensagem99(int* nseq);
-
+//Handles 
+HANDLE hEventos[2];
+HANDLE hTimer;
+LARGE_INTEGER Present;
+//hEvento[2] = hEventoACK;
 //Threads
 DWORD WINAPI ThreadTeclado(LPVOID);
 
@@ -73,25 +77,22 @@ int main(int argc, char **argv)
 	if (hThreadTeclado) 	cout << "Thread de leitura do teclado criada com Id=" << dwThreadTeclado << "\n";
 
 	//Variáveis do Temporizador//
-    HANDLE hTimer;
-    LARGE_INTEGER Present;
+    
 
-	hTimer= CreateWaitableTimer(NULL, FALSE, L"Timer");
+	hEventos[0]= CreateWaitableTimer(NULL, FALSE, L"Timer");
 	Present.QuadPart = -(10000 * 200);
 	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
 	
 	// Verifica se o que foi passado na linha de comando está correto
-	/*if (argc != 3) {
-		printf("Valores inválidos, reinicie o cliente...\n");
+	if (argc != 3) {
+		printf("User: TrabalhoSDA <IP> <port>\n");
 		exit(0);
-	}*/
-	ipaddr = argv[1];
-	port = 3045;
-	//ipaddr = argv[1];
-	//port = atoi(argv[2]);
-
-	//Criar Temporizador
+	}
+	else {
+		ipaddr = argv[1];
+		port = atoi(argv[2]);
+	}
 
 	// Inicializa Winsock versão 2.2
 	statusSocket = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -100,10 +101,11 @@ int main(int argc, char **argv)
 		WSACleanup();
 		exit(0);
 	}
+
 	// Estrutura SOCKADDR_IN
 	ServerAddr.sin_family = AF_INET;
 	ServerAddr.sin_port = htons(port);
-	//ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
+	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
 	while (true) {
 		// Criação do Socket
@@ -125,8 +127,8 @@ int main(int argc, char **argv)
 		statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
 		if (statusSocket == SOCKET_ERROR) {
 			if (WSAGetLastError() == WSAEHOSTUNREACH) {
-				/*//printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
-				else {
+				printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
+				/*else {
 					Sleep(5000);
 					continue;
 				}*/
@@ -141,17 +143,10 @@ int main(int argc, char **argv)
 		while (true) {
 			int tipo;
 			DWORD ret;
-			HANDLE hEvento[3];
-
-			hEvento[0] = hTimer;
-			hEvento[1] = hEventoP;
-			//hEvento[2] = hEventoACK;
-
-
-			ret = WaitForMultipleObjects(3,hEvento,false,INFINITE);
-
+			ret = WaitForMultipleObjects(2,hEventos,FALSE,INFINITE);
+			cout << "UAI\n";
 			tipo = ret - WAIT_OBJECT_0;
-
+			//printf("Tipo é %d\n", tipo);
 			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 			if (tipo == 0) {
 			//Envio mensagem tipo 11
@@ -169,6 +164,7 @@ int main(int argc, char **argv)
 
 			}
 			else if (tipo == 1) {
+			printf("Tipo é %d\n", tipo);
 			//Enviar mensagem 33
 				//Esperar msg 55 -> Setar ACK
 				char* msg;
@@ -210,15 +206,15 @@ int main(int argc, char **argv)
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
 	// Eventos
-	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
-	hEventoP = CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+	hEventoESC = CreateEvent(NULL, TRUE, TRUE, L"EventoESC"); // reset manual
+	hEventos[1] = CreateEvent(NULL, TRUE, FALSE, L"EventoP"); // reset automatico
 	int status; 
 	do {
 		cout << "\n Tecle <p> para simular o evento de solitacao de mensagem \n <ESC> para sair \n";
 		Tecla = _getch();
 
 		if (Tecla == p) {
-			status = SetEvent(hEventoP);
+			status = SetEvent(hEventos[1]);
 			cout << "\n Evento P ocorreu \n";
 			Tecla = 0;
 		}
@@ -233,6 +229,7 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 
 	} while (Tecla != ESC);
+	cout << "Thread leitura do teclado encerrando...\n";
 	_endthreadex((DWORD)index);
 	return(0);
 
