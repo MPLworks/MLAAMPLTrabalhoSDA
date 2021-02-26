@@ -47,9 +47,10 @@ HANDLE hEventoESC, hEventoP;
 
 
 // Funções de Criação das Mensagens
-char*  novaMensagem11(int* nseq);
-char*  novaMensagem33(int* nseq);
-char*  novaMensagem99(int* nseq);
+char*  novaMensagem11(int nseq);
+char*  novaMensagem33(int nseq);
+char*  novaMensagem99(int nseq);
+
 //Handles 
 HANDLE hEventos[2];
 HANDLE hTimer;
