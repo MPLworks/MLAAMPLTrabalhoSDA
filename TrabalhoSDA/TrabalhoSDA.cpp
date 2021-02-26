@@ -264,6 +264,9 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 	} while (Tecla != ESC);
 	cout << "Thread leitura do teclado encerrando...\n";
 	_endthreadex((DWORD)index);
+	CloseHandle(hEventoP);
+	CloseHandle(hEventoESC);
+
 	return(0);
 
 }
