@@ -139,7 +139,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="recursos\opcda_i.c" />
+    <ClCompile Include="recursos\SOCAdviseSink.cpp" />
+    <ClCompile Include="recursos\SOCDataCallback.cpp" />
+    <ClCompile Include="recursos\SOCWrapperlFunctions.cpp" />
     <ClCompile Include="TrabalhoSDA.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="recursos\opcda.h" />
+    <ClInclude Include="recursos\opcerror.h" />
+    <ClInclude Include="recursos\SOCAdviseSink.h" />
+    <ClInclude Include="recursos\SOCDataCallback.h" />
+    <ClInclude Include="recursos\SOCWrapperFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

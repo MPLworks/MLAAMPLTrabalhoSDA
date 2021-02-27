@@ -306,8 +306,8 @@ void STDMETHODCALLTYPE SOCAdviseSink::OnDataChange(
 			// compilation errors.
 			FileTimeToLocalFileTime(&itemheader.ftTimeStampItem,&lft);
 			FileTimeToSystemTime(&lft, &st);
-			GetDateFormat(LOCALE_SYSTEM_DEFAULT, DATE_SHORTDATE, &st, NULL, szLocalDate, 255);
-			GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &st, NULL, szLocalTime, 255);
+			GetDateFormat(LOCALE_SYSTEM_DEFAULT, DATE_SHORTDATE, &st, NULL, (LPWSTR)szLocalDate, 255);
+			GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &st, NULL, (LPWSTR)szLocalTime, 255);
 			printf(" Time: %s %s\n", szLocalDate, szLocalTime);
 		}
 		else printf ("Data Advise: Unsupported item type\n");
