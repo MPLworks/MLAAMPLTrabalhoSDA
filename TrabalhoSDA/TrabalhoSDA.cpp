@@ -43,10 +43,9 @@ typedef unsigned* CAST_LPDWORD;
 
 //-----Variáveis Globais----//
 int nseq = 1, Tecla=0;
-HANDLE hEventoESC, hEventoP, hEvento[3];
-//Variaveis timer
-HANDLE hTimer;
-LARGE_INTEGER Present;
+HANDLE hEventoESC, hEventoP;
+
+
 // Funções de Criação das Mensagens
 char*  novaMensagem11(int nseq);
 char*  novaMensagem33(int nseq);
@@ -65,15 +64,25 @@ int main(int argc, char **argv)
 	int status,statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
+
 	//Variáveis Threads Secundárias
 	int j;
 	HANDLE hThread[2];
 	DWORD dwRet;
 	DWORD dwThreadTeclado, dwThreadOPC;
 	DWORD dwExitCode = 0;
-	//Evento ACK
-	HANDLE hACK99;
-	hACK99 = CreateEvent(NULL, FALSE, FALSE, L"EventoACK99");
+
+	//Variaveis timer 
+	HANDLE hTimer;
+	LARGE_INTEGER Present;
+
+
+	// Eventos
+	HANDLE hEventoACk;
+
+	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
+	hEventoP = CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+	hEventoACk = CreateEvent(NULL, FALSE, FALSE, L"EventoACk"); // reset automatico
 
 	// Criação de Threads
 	hThread[0]= (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
@@ -83,8 +92,7 @@ int main(int argc, char **argv)
 	if (hThread[1]) 	cout << "Thread do OPC Client criada com Id=" << dwThreadOPC << "\n";
 
 	//Variáveis do Temporizador//
-    
-
+   
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
 	Present.QuadPart = -(10000 * 200);
 	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
@@ -149,31 +157,25 @@ int main(int argc, char **argv)
 		while (true) {
 			int tipo;
 			DWORD ret;
-			HANDLE hEventos[3];
+			HANDLE hEventos[2];
 			hEventos[0] = hTimer;
 			hEventos[1] = hEventoP;
-			hEventos[2] = hACK99;
 
-			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
+			ret = WaitForMultipleObjects(2,hEventos,FALSE,INFINITE);
+			cout << "UAI\n";
 			tipo = ret - WAIT_OBJECT_0;
-			
 			//printf("Tipo é %d\n", tipo);
 			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 			if (tipo == 0) {
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
-				printf("Mensagem do tipo 11 será enviada\n");
 				char *msg;
 				msg = novaMensagem11(nseq);
-				cout << "Erro criação da msg\n";
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
-				cout << "Erro no envio da msg\n";
-				cout << "msg tipo 11" << msg << endl;
-				statusSocket = send(s, msg, TAMSTATUS+1, 0);
-				cout << "Erro por esperar algo\n";
+				statusSocket = send(s, msg, TAMSTATUS, 0);
 				//Verificar status e printar na tela
 				//
 				
@@ -244,9 +246,7 @@ int main(int argc, char **argv)
 }
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
-	// Eventos
-	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
-	hEventoP= CreateEvent(NULL, TRUE, FALSE, L"EventoP"); // reset automatico
+
 
 	int status; 
 	do {
@@ -271,38 +271,31 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 	} while (Tecla != ESC);
 	cout << "Thread leitura do teclado encerrando...\n";
 	_endthreadex((DWORD)index);
-	CloseHandle(hEventoP);
-	CloseHandle(hEventoESC);
-
 	return(0);
 
 }
 
 
 char* novaMensagem11(int nseq) {
-	cout << "criando msg 11\n";
 	string msg;
-	char parte[6];
-	char texto[TAMSTATUS+1];
+	char parte[5];
+	char texto[TAMSTATUS] = "erro$mensagem$nao$criada";
 	int aux = rand() % 999999;
 
-	sprintf(parte, "%06d", nseq);
+	sprintf(parte, "%05d", nseq);
 	msg = parte;
 	msg += "$";
 	msg += to_string(11) + "$";
-	msg += to_string(rand()%999999) + "$";
-	aux = rand() % 99999;
+	msg += to_string(aux) + "$";
+	aux = rand() % 9999;
 	msg += to_string((float)aux / 10) + "$";
 	aux = rand() % 9999;
 	msg += to_string((float)aux / 10) + "$";
 	aux = rand() % 9999;
 	msg += to_string((float)aux / 10);
-	cout << "A msg e" << msg << endl;
-	cout << "Enviando smg 11\n"<<sizeof(msg)<<"tamanho outro"<<sizeof(texto)<<endl;
-	
 
-	//char* texto = new char[msg.size() + 1];
-	strcpy(texto, msg.c_str()+1);
+
+	strcpy(texto, msg.c_str());
 
 	return texto;
 }
@@ -310,7 +303,7 @@ char* novaMensagem11(int nseq) {
 char* novaMensagem33(int nseq) {
 	string msg;
 	char parte[5];
-	char texto[TAMREQ];
+	char texto[TAMREQ]= "erro$MSG";
 	
 
 	sprintf(parte, "%05d", nseq);
@@ -335,7 +328,7 @@ char* novaMensagem33(int nseq) {
 char* novaMensagem99(int nseq) {
 	string msg;
 	char parte[5];
-	char texto[TAMREQ];
+	char texto[TAMREQ]="erro$MSG";
 	
 
 	sprintf(parte, "%05d", nseq);
