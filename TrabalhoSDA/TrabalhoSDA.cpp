@@ -82,12 +82,18 @@ int main(int argc, char **argv)
 	hThread[1] = (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)OPCClient, NULL, 0, (CAST_LPDWORD)&dwThreadOPC);
 	if (hThread[1]) 	cout << "Thread do OPC Client criada com Id=" << dwThreadOPC << "\n";
 
-	//Variáveis do Temporizador//
-    
-
+	//Criação do Temporizador//
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
 	Present.QuadPart = -(10000 * 200);
 	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+
+	//Criação das mensagens//
+	char msgstatus[TAMSTATUS + 1];
+	char msgack99[TAMACK + 1] = "NNNNNN$99";
+	char msgreq[TAMREQ + 1] = "NNNNNN$33";
+	char msgpos[TAMPOS + 1] = "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
+	char msgack22[TAMACK + 1];
+	char buf[100];
 
 	
 	// Verifica se o que foi passado na linha de comando está correto
@@ -146,13 +152,14 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 		}
-		while (true) {
+		while (Tecla!=ESC) {
 			int tipo;
 			DWORD ret;
 			HANDLE hEventos[3];
 			hEventos[0] = hTimer;
 			hEventos[1] = hEventoP;
 			hEventos[2] = hACK99;
+
 
 			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
 			tipo = ret - WAIT_OBJECT_0;
@@ -163,9 +170,8 @@ int main(int argc, char **argv)
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
 				printf("Mensagem do tipo 11 será enviada\n");
-				char msg[TAMPOS+1];
-
-				strcpy(msg, "000128$11$983211$9999.1$8888.2");
+				//msgpos=
+				//strcpy(msg, "000128$11$983211$9999.1$8888.2");
 				//msg = novaMensagem11(nseq);
 				cout << "Erro criação da msg\n";
 				nseq++;
@@ -173,13 +179,13 @@ int main(int argc, char **argv)
 					nseq = 1;
 				}
 				cout << "Erro no envio da msg\n";
-				cout << "msg tipo 11" << msg << endl;
-				statusSocket = send(s, msg, TAMSTATUS, 0);
+				cout << "msg tipo 11" << msgpos << endl;
+				statusSocket = send(s, msgpos, TAMSTATUS+1, 0);
 				cout << "Erro por esperar algo\n";
 				//Verificar status e printar na tela
 				//
 				
-				statusSocket = recv(s, msg, TAMACK, 0);
+				statusSocket = recv(s, msgack22, TAMACK, 0);
 				if (statusSocket == TAMACK) {
 					//verificar código e talvez do nseq
 				}
