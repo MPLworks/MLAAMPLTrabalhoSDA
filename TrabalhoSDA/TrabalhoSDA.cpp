@@ -163,8 +163,10 @@ int main(int argc, char **argv)
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
 				printf("Mensagem do tipo 11 será enviada\n");
-				char *msg;
-				msg = novaMensagem11(nseq);
+				char msg[TAMPOS+1];
+
+				strcpy(msg, "000128$11$983211$9999.1$8888.2");
+				//msg = novaMensagem11(nseq);
 				cout << "Erro criação da msg\n";
 				nseq++;
 				if (nseq == 99999) {
@@ -172,7 +174,7 @@ int main(int argc, char **argv)
 				}
 				cout << "Erro no envio da msg\n";
 				cout << "msg tipo 11" << msg << endl;
-				statusSocket = send(s, msg, TAMSTATUS+1, 0);
+				statusSocket = send(s, msg, TAMSTATUS, 0);
 				cout << "Erro por esperar algo\n";
 				//Verificar status e printar na tela
 				//
@@ -238,6 +240,7 @@ int main(int argc, char **argv)
 
 	//Fechar Handles
 	CloseHandle(hTimer);
+	CloseHandle(hACK99);
 	
     
     return(0);
@@ -298,11 +301,10 @@ char* novaMensagem11(int nseq) {
 	aux = rand() % 9999;
 	msg += to_string((float)aux / 10);
 	cout << "A msg e" << msg << endl;
-	cout << "Enviando smg 11\n"<<sizeof(msg)<<"tamanho outro"<<sizeof(texto)<<endl;
-	
 
 	//char* texto = new char[msg.size() + 1];
 	strcpy(texto, msg.c_str()+1);
+	cout << "Enviando smg 11\n" << sizeof(msg) << "tamanho outro" << sizeof(texto) << endl;
 
 	return texto;
 }
