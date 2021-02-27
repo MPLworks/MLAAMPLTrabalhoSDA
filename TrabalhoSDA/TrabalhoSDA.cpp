@@ -11,6 +11,7 @@
 #define _WIN32_WINNT  0x0400	// Necessário para ativar novas funções da versão 4
 
 
+
 #include <windows.h>
 #include <process.h>	
 #include <stdio.h>

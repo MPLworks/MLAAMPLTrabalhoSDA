@@ -145,7 +145,7 @@ HRESULT STDMETHODCALLTYPE SOCDataCallback::OnDataChange(
 			FileTimeToSystemTime(&lft, &st);
 			GetDateFormat(LOCALE_SYSTEM_DEFAULT, DATE_SHORTDATE, &st, NULL, (LPWSTR)szLocalDate, 255);
 			GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &st, NULL, (LPWSTR)szLocalTime, 255);
-			printf(" Time: %s %s\n", szLocalDate, (LPWSTR)szLocalTime);
+			printf(" Time: %s %s\n", szLocalDate, (char*)(LPWSTR)szLocalTime);
 		}
 		else printf ("IOPCDataCallback: Unsupported item type\n");
 	}
