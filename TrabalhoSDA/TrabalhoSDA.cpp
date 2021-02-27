@@ -44,7 +44,7 @@ typedef unsigned* CAST_LPDWORD;
 
 
 //-----Variáveis Globais----//
-int nseq = 1, Tecla=0;
+int nseq = 0, Tecla=0;
 HANDLE hEventoESC, hEventoP, hEvento[3];
 //Variaveis timer
 HANDLE hTimer;
@@ -85,14 +85,14 @@ int main(int argc, char **argv)
 
 	//Criação do Temporizador//
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
-	Present.QuadPart = -(10000 * 200);
-	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+	//Present.QuadPart = -(10000 * 200);
+	//status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
 	//Criação das mensagens//
-	char msgstatus[TAMSTATUS + 1];
+	char msgstatus[TAMSTATUS + 1]= "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
 	char msgack99[TAMACK + 1] = "NNNNNN$99";
 	char msgreq[TAMREQ + 1] = "NNNNNN$33";
-	char msgpos[TAMPOS + 1] = "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
+	char msgpos[TAMPOS + 1];
 	char msgack22[TAMACK + 1];
 	char buf[100];
 
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
 			tipo = ret - WAIT_OBJECT_0;
 			
-			//printf("Tipo é %d\n", tipo);
+			printf("Tipo é %d\n", tipo);
 			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 			
 			if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 				}
 				//Formatação da mensagem p/ o envio
 				memset(buf, 0, sizeof(buf));
-				sprintf(buf, "%06d", ++nseq);
+				sprintf(buf, "%06d", nseq);
 				memcpy(msgreq, buf, 6);
 				statusSocket = send(s, msgreq, TAMREQ, 0);
 				//Verificar status e printar na tela
@@ -248,6 +248,7 @@ int main(int argc, char **argv)
 				statusSocket = recv(s, buf, TAMPOS, 0);
 				sscanf(buf, "%6d", &nseqaux);
 				if (++nseq != nseqaux) {
+					
 					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
 					closesocket(s);
 					WSACleanup();
@@ -255,9 +256,10 @@ int main(int argc, char **argv)
 				}
 				else {
 					if (strncmp(&buf[7], "55", 2) == 0) {
+						cout << "Tamanho buffer" << sizeof(buf) << endl;
 						nseq = nseqaux;
-						strncpy(&msgpos[TAMPOS], buf, TAMPOS);
-						printf("Mensagem de poosicionamento recevida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+						strncpy(&msgpos[TAMPOS], buf, TAMPOS+1);
+						printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
 						SetEvent(hACK99);
 					}
 					else {
@@ -273,7 +275,7 @@ int main(int argc, char **argv)
 				}
 				//Formatação da mensagem p/ o envio
 				memset(buf, 0, sizeof(buf));
-				sprintf(buf, "%06d", ++nseq);
+				sprintf(buf, "%06d", nseq);
 				memcpy(msgack99, buf, 6);
 				statusSocket = send(s, msgack99, TAMREQ, 0);
 				//Verificar status e printar na tela
@@ -323,7 +325,7 @@ int main(int argc, char **argv)
 DWORD WINAPI ThreadTeclado(LPVOID index) {
 	// Eventos
 	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
-	hEventoP= CreateEvent(NULL, TRUE, FALSE, L"EventoP"); // reset automatico
+	hEventoP= CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
 
 	int status; 
 	do {
