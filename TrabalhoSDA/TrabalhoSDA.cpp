@@ -224,7 +224,6 @@ int main(int argc, char **argv)
 			// Enviar msg 99 que é o ack
 			}
 
-			
 		}
 
 	} while (Tecla != ESC);
