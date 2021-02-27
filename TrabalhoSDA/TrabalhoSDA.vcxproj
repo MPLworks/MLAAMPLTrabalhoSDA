@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="recursos\opcda_i.c" />
+    <ClCompile Include="recursos\opcda.c" />
     <ClCompile Include="recursos\SOCAdviseSink.cpp" />
     <ClCompile Include="recursos\SOCDataCallback.cpp" />
     <ClCompile Include="recursos\SOCWrapperlFunctions.cpp" />

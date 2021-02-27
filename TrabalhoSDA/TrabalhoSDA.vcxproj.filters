@@ -27,7 +27,7 @@
     <ClCompile Include="recursos\SOCWrapperlFunctions.cpp">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
-    <ClCompile Include="recursos\opcda_i.c">
+    <ClCompile Include="recursos\opcda.c">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
   </ItemGroup>

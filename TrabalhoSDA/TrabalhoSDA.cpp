@@ -65,6 +65,7 @@ int main(int argc, char **argv)
 	int status,statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
+	int nseqaux;
 	//Variáveis Threads Secundárias
 	int j;
 	HANDLE hThread[2];
@@ -169,47 +170,72 @@ int main(int argc, char **argv)
 			if (tipo == 0) {
 			//Envio mensagem tipo 11
 				//recv 22 aqui dentro
-				printf("Mensagem do tipo 11 será enviada\n");
+				//printf("Mensagem do tipo 11 será enviada\n");
 				//msgpos=
 				//strcpy(msg, "000128$11$983211$9999.1$8888.2");
 				//msg = novaMensagem11(nseq);
-				cout << "Erro criação da msg\n";
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
-				cout << "Erro no envio da msg\n";
+				//chamar nossa função para conseguir arrumar a msg pos pra envia-la
 				cout << "msg tipo 11" << msgpos << endl;
-				statusSocket = send(s, msgpos, TAMSTATUS+1, 0);
-				cout << "Erro por esperar algo\n";
+				statusSocket = send(s, msgpos, TAMSTATUS, 0);
+				cout << msgpos << endl;
 				//Verificar status e printar na tela
-				//
 				
-				statusSocket = recv(s, msgack22, TAMACK, 0);
-				if (statusSocket == TAMACK) {
-					//verificar código e talvez do nseq
+				//Aguarda recebimento do ACK22
+				statusSocket = recv(s, buf, TAMACK, 0);
+				sscanf(msgack22, "%6d", &nseqaux);
+				if (++nseq != nseqaux) {
+					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n",nseqaux, nseq);
+					closesocket(s);
+					WSACleanup();
+					exit(0);
+				}
+				else {
+					nseq = nseqaux;
+					if (strncmp(&buf[7], "22", 2) == !0) {
+						strncpy(msgack22, buf, TAMACK + 1);
+						printf("Mensagem de ACK recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
+					}
+					else {
+						printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
+						printf("Encerrando o programa...\n");
+						closesocket(s);
+						WSACleanup();
+						exit(0);
+					}
 				}
 
 			}
-			else if (tipo == 1) {
-			printf("Tipo é %d\n", tipo);
 			//Enviar mensagem 33
-				//Esperar msg 55 -> Setar ACK
-				char* msg;
-				msg = novaMensagem33(nseq);
+			else if (tipo == 1) {
+			//printf("Tipo é %d\n", tipo);
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
-				statusSocket = send(s, msg, TAMREQ, 0);
+				memset(buf, 0, sizeof(buf));
+				sprintf(buf, "%06d", ++nseq);
+				memcpy(msgreq, buf, 6);
+				status = send(s, msgreq, TAMREQ, 0);
 				//Verificar status e printar na tela
-				//
+				printf("Mensagem de Requisição de Dados enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
+				//receber mensagem 55
+				status = recv(s, buf, TAMPOS, 0);
+				sscanf(buf, "%6d", &nseqaux);
+				if (++nseq != nseqaux) {
+					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
+					closesocket(s);
+					WSACleanup();
+					exit(0);
+				}
+				if (strncmp(&buf[7], "55", 2) == 0) {
 
-				statusSocket = recv(s, msg, TAMPOS, 0);
-				if (statusSocket == TAMPOS){
-					//verificar código e talvez do nseq
-					//s
-					//Se tiver certo setar evento de ACK
+				}
+				else {
+
 				}
 
 			}
