@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <iostream>
 #include<string>
+#include "opcclient.h"
 #pragma comment (lib, "ws2_32.lib") //Inclui a biblioteca winsocket 
 
 using namespace std;
@@ -369,6 +370,8 @@ DWORD WINAPI OPCClient(LPVOID index) {
 		ret = WaitForSingleObject(hEvento,100);
 		encerramento= ret - WAIT_OBJECT_0;
 
+
+		opcClient();
 
 
 
