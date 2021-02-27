@@ -71,7 +71,9 @@ int main(int argc, char **argv)
 	DWORD dwRet;
 	DWORD dwThreadTeclado, dwThreadOPC;
 	DWORD dwExitCode = 0;
-	
+	//Evento ACK
+	HANDLE hACK99;
+	hACK99 = CreateEvent(NULL, FALSE, FALSE, L"EventoACK99");
 
 	// Criação de Threads
 	hThread[0]= (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)ThreadTeclado, NULL, 0, (CAST_LPDWORD)&dwThreadTeclado);
@@ -147,11 +149,12 @@ int main(int argc, char **argv)
 		while (true) {
 			int tipo;
 			DWORD ret;
-			HANDLE hEventos[2];
+			HANDLE hEventos[3];
 			hEventos[0] = hTimer;
 			hEventos[1] = hEventoP;
+			hEventos[2] = hACK99;
 
-			ret = WaitForMultipleObjects(2,hEventos,FALSE,INFINITE);
+			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
 			tipo = ret - WAIT_OBJECT_0;
 			
 			//printf("Tipo é %d\n", tipo);
