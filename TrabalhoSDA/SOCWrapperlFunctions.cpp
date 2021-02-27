@@ -5,7 +5,7 @@
 // IOPCDataCallback.
 //
 // Luiz T. S. Mendes - DELT/UFMG - 13 Sept 2011
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <ObjIdl.h>
 #include <stdio.h>
 #include "opcda.h"

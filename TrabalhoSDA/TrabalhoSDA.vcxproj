@@ -116,10 +116,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -139,18 +141,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="recursos\opcda_i.c" />
-    <ClCompile Include="recursos\SOCAdviseSink.cpp" />
-    <ClCompile Include="recursos\SOCDataCallback.cpp" />
-    <ClCompile Include="recursos\SOCWrapperlFunctions.cpp" />
+    <ClCompile Include="opcda.c" />
+    <ClCompile Include="opcclient.cpp" />
+    <ClCompile Include="SOCAdviseSink.cpp" />
+    <ClCompile Include="SOCDataCallback.cpp" />
+    <ClCompile Include="SOCWrapperlFunctions.cpp" />
     <ClCompile Include="TrabalhoSDA.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="recursos\opcda.h" />
-    <ClInclude Include="recursos\opcerror.h" />
-    <ClInclude Include="recursos\SOCAdviseSink.h" />
-    <ClInclude Include="recursos\SOCDataCallback.h" />
-    <ClInclude Include="recursos\SOCWrapperFunctions.h" />
+    <ClInclude Include="opcclient.h" />
+    <ClInclude Include="opcda.h" />
+    <ClInclude Include="opcerror.h" />
+    <ClInclude Include="SOCAdviseSink.h" />
+    <ClInclude Include="SOCDataCallback.h" />
+    <ClInclude Include="SOCWrapperFunctions.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
