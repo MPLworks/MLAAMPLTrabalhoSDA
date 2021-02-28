@@ -396,7 +396,7 @@ DWORD WINAPI OPCClient(LPVOID index) {
 		ret = WaitForSingleObject(hEvento,100);
 		encerramento= ret - WAIT_OBJECT_0;
 
-		//opcClient();
+		opcClient();
 
 	}while (encerramento != 0);
 
