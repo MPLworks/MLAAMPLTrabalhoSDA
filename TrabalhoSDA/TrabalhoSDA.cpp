@@ -277,10 +277,10 @@ int main(int argc, char **argv)
 				memset(buf, 0, sizeof(buf));
 				sprintf(buf, "%06d", nseq);
 				memcpy(msgack99, buf, 6);
-				statusSocket = send(s, msgack99, TAMREQ, 0);
+				statusSocket = send(s, msgack99, TAMACK, 0);
 				//Verificar status e printar na tela
 				if (statusSocket == TAMACK) {
-					printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
+					printf("Ack 99 sendo enviado ao Sist. de mapeamento 3D: %s\n\n", msgack99);
 				}
 				else {
 					if (statusSocket == 0)
@@ -395,7 +395,7 @@ DWORD WINAPI OPCClient(LPVOID index) {
 		ret = WaitForSingleObject(hEvento,100);
 		encerramento= ret - WAIT_OBJECT_0;
 
-		opcClient();
+		//opcClient();
 
 	}while (encerramento != 0);
 
