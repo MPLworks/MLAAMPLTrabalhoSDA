@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 					if (strncmp(&buf[7], "55", 2) == 0) {
 						cout << "Tamanho buffer" << sizeof(buf) << endl;
 						nseq = nseqaux;
-						strncpy(&msgpos[TAMPOS], buf, TAMPOS+1);
+						strncpy(msgpos, buf, TAMPOS+1);
 						printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
 						SetEvent(hACK99);
 					}
