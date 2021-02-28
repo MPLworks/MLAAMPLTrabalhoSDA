@@ -29,7 +29,7 @@ wchar_t ITEM_ID8[] = L"Bucket Brigade.Real8";
 #define VT0 VT_UI1
 #define VT1 VT_R4
 #define VT2 VT_R4
-#define VT3 VT_R4
+#define VT3 VT_R8
 #define VT4 VT_R4
 #define VT5 VT_UI1
 #define VT6 VT_UI2
@@ -273,6 +273,84 @@ void opcClient(void) {
 	 8 -  Taxa de recuperação de minério (kg/min)         - Bucket Brigade.Real8     - Escrita
 	*/
 
+    //Leitura:
+
+	//Synchronous read of the device´s item value.
+
+		VARIANT varValueR[4]; //to store the read value
+		VariantInit(&varValueR[0]); // 0 -  Taxa de recuperação de minério
+		VariantInit(&varValueR[1]); // 1 -  Potência atual consumida (kW) 
+		VariantInit(&varValueR[2]); // 2 -  Temperatura motor de translação (C)
+		VariantInit(&varValueR[3]); // 3 -  Temperatura motor da roda de caçambas (C)
+
+		ReadItem(pIOPCItemMgt, hServerItem[0], varValueR[0]);
+		ReadItem(pIOPCItemMgt, hServerItem[1], varValueR[1]);
+		ReadItem(pIOPCItemMgt, hServerItem[2], varValueR[2]);
+		ReadItem(pIOPCItemMgt, hServerItem[3], varValueR[3]);
+
+		printf("Read value: %06d\n", varValueR[0].intVal);
+		printf("Read value: %06.2f\n", varValueR[1].fltVal);
+		printf("Read value: %06.2f\n", varValueR[2].fltVal);
+		printf("Read value: %06.2f\n", varValueR[3].fltVal);
+
+
+
+	//Escrita:
+
+		VARIANT varValueW[5]; //to store the write value
+		VariantInit(&varValueW[0]); //  4 -  Velocidade de translação (cm/s) 
+		VariantInit(&varValueW[1]); //  5 -  Coordenada espacial X do ponto de ataque (cm) 
+		VariantInit(&varValueW[2]); //  6 -  Coordenada espacial Y do ponto de ataque (cm)
+		VariantInit(&varValueW[3]); //  7 -  Coordenada espacial Z do ponto de ataque (cm)
+		VariantInit(&varValueW[4]); //  8 -  Taxa de recuperação de minério (kg/min) 
+
+
+		varValueW[0].fltVal =321.12;
+		varValueW[1].intVal = 2;
+		varValueW[2].intVal = 3;
+		varValueW[3].intVal = 4;
+		varValueW[4].fltVal = 35.412;
+
+		varValueW[0].vt = vec2[4];
+		varValueW[1].vt = vec2[5];
+		varValueW[2].vt = vec2[6];
+		varValueW[3].vt = vec2[7];
+		varValueW[4].vt = vec2[8];
+
+
+
+		WriteItem(pIOPCItemMgt, 1, hServerItem[4], varValueW[0]);
+		WriteItem(pIOPCItemMgt, 1, hServerItem[5], varValueW[1]);
+		WriteItem(pIOPCItemMgt, 1, hServerItem[6], varValueW[2]);
+		WriteItem(pIOPCItemMgt, 1, hServerItem[7], varValueW[3]);
+		WriteItem(pIOPCItemMgt, 1, hServerItem[8], varValueW[4]);
+
+		varValueW[0].fltVal = 1;
+		varValueW[1].intVal = 10;
+		varValueW[2].intVal = 10;
+		varValueW[3].intVal = 10;
+		varValueW[4].fltVal = 1;
+
+		
+		ReadItem(pIOPCItemMgt, hServerItem[4], varValueW[0]);
+		ReadItem(pIOPCItemMgt, hServerItem[5], varValueW[1]);
+		ReadItem(pIOPCItemMgt, hServerItem[6], varValueW[2]);
+		ReadItem(pIOPCItemMgt, hServerItem[7], varValueW[3]);
+		ReadItem(pIOPCItemMgt, hServerItem[8], varValueW[4]);
+	
+		printf("Read value: %06.2f\n", varValueW[0].fltVal);
+		printf("Read value: %06d\n",   varValueW[1].intVal);
+		printf("Read value: %06d\n",   varValueW[2].intVal);
+		printf("Read value: %06d\n",   varValueW[3].intVal);
+		printf("Read value: %06.2f\n", varValueW[4].fltVal);
+
+
+
+
+
+
+
+
 	// Establish a callback asynchronous read by means of the old IAdviseSink()
 	// (OPC DA 1.0) method. We first instantiate a new SOCAdviseSink object and
 	// adjusts its reference count, and then call a wrapper function to
@@ -294,11 +372,6 @@ void opcClient(void) {
 	DWORD ticks1, ticks2;
 	ticks1 = GetTickCount();
 	printf("Waiting for IAdviseSink callback notifications during 10 seconds...\n");
-
-	//Leitura:
-
-
-	//Escrita:
 
 
 	// Cancel the callback and release its reference
