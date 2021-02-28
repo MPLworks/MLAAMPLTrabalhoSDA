@@ -3,7 +3,7 @@
 
 /*
 
-* Modifcação do 'SimpleOPCClient_v3.cpp' diponibilizado pelo 
+* Modificação do 'SimpleOPCClient_v3.cpp' diponibilizado pelo 
 professor Luiz Themystokliz (based on the KEPWARE´s sample client code).
 
 */
