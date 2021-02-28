@@ -9,7 +9,7 @@
 #include "SOCDataCallback.h"
 #include "SOCWrapperFunctions.h"
 
-
+wchar_t ServerName[] = L"Matrikon.OPC.Simulation.1";
 UINT OPC_DATA_TIME = RegisterClipboardFormat(_T("OPCSTMFORMATDATATIME"));
 
 wchar_t* ITEM_IDS[10] = { (LPWSTR)"Random.UInt1",(LPWSTR)"Random.Real",
@@ -81,7 +81,7 @@ void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int indice) {
 	OPCITEMDEF ItemArray[1] =
 	{ {
 			/*szAccessPath*/ (LPWSTR)"",
-			/*szItemID*/ LPWSTR(ITEM_IDS[indice]),
+			/*szItemID*/  LPWSTR(ITEM_IDS[indice]),
 			/*bActive*/ TRUE,
 			/*hClient*/ indice,
 			/*dwBlobSize*/ 0,
@@ -95,7 +95,7 @@ void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int indice) {
 	HRESULT* pErrors = NULL;
 
 	// Add an Item to the previous Group:
-	hr = pIOPCItemMgt->AddItems(1, ItemArray, &pAddResult, &pErrors);
+	hr = pIOPCItemMgt->AddItems(indice, ItemArray, &pAddResult, &pErrors);
 	if (hr != S_OK) {
 		printf("Failed call to AddItems function. Error code = %x\n", hr);
 		exit(0);
@@ -205,14 +205,14 @@ void opcClient(void) {
 
 	// Let's instantiante the IOPCServer interface and get a pointer of it:
 	printf("Instantiating the MATRIKON OPC Server for Simulation...\n");
-	pIOPCServer = InstantiateServer((LPWSTR)"Matrikon.OPC.Simulation.1");
+	pIOPCServer = InstantiateServer(ServerName);
 
 	// Testa a Coneção
 	if (pIOPCServer != NULL) {
-		cout << " Conexao Realizada!\n";
+		cout << " Conexao com Matrikon Realizada!\n";
 	}
 	else {
-		cout << " Erro na Conexão!\n";
+		cout << " Erro na Conexão com Matrikon!\n";
 	}
 
 	// Add the OPC group the OPC server and get an handle to the IOPCItemMgt
@@ -227,7 +227,7 @@ void opcClient(void) {
 	for (i = 0; i < 10; i++) {
 		size_t m;
 		wcstombs_s(&m, buf, 100, ITEM_IDS[i], _TRUNCATE);
-		AddTheItem(pIOPCItemMgt, hServerItem[i], i+1);
+		AddTheItem(pIOPCItemMgt, hServerItem[i], i);
 		printf("ITEM %i --- Adding the item %s to the group...\n", i, buf);
 	}
 
