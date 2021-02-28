@@ -31,9 +31,11 @@ professor Luiz Themystokliz (based on the KEPWARE´s sample client code).
 using namespace std;
 
 #define OPC_SERVER_NAME L"Matrikon.OPC.Simulation.1"
-#define VT VT_R4
 
-#pragma comment (lib, "Ws2_32.lib")
+
+//#pragma comment (lib, "Ws2_32.lib")
+
+
 
 
 IOPCServer* InstantiateServer(wchar_t ServerName[]);

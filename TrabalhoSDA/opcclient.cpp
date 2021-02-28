@@ -9,10 +9,15 @@
 #include "SOCDataCallback.h"
 #include "SOCWrapperFunctions.h"
 
-#define OPC_SERVER_NAME L"Matrikon.OPC.Simulation.1"
-#define VT VT_R4
+
 UINT OPC_DATA_TIME = RegisterClipboardFormat(_T("OPCSTMFORMATDATATIME"));
-wchar_t ITEM_ID[] = L"Saw-toothed Waves.Real4";
+
+wchar_t* ITEM_IDS[10] = { (LPWSTR)"Random.UInt1",(LPWSTR)"Random.Real",
+(LPWSTR)"Saw-toothed Waves.Real4",(LPWSTR)"Square Waves.Real4",(LPWSTR)"Bucket Brigade.Real4",
+(LPWSTR)"Bucket Brigade.UInt1",(LPWSTR)"Bucket Brigade.UInt2",(LPWSTR)"Bucket Brigade.UInt4",
+(LPWSTR)"Bucket Brigade.Real8" };
+
+int TypesVT[10] = { VT_UI1,VT_R4,VT_R4,VT_R4,VT_R4,VT_UI1,VT_UI2,VT_UI4,VT_R8 };
 
 IOPCServer* InstantiateServer(wchar_t ServerName[])
 {
@@ -69,19 +74,19 @@ void AddTheGroup(IOPCServer* pIOPCServer, IOPCItemMgt*& pIOPCItemMgt,OPCHANDLE& 
 	_ASSERT(!FAILED(hr));
 }
 
-void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int index) {
+void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int indice) {
 	HRESULT hr;
 
 	// Array of items to add:
 	OPCITEMDEF ItemArray[1] =
 	{ {
 			/*szAccessPath*/ (LPWSTR)"",
-			/*szItemID*/ ITEM_ID,
+			/*szItemID*/ LPWSTR(ITEM_IDS[indice]),
 			/*bActive*/ TRUE,
-			/*hClient*/ 1,
+			/*hClient*/ indice,
 			/*dwBlobSize*/ 0,
 			/*pBlob*/ NULL,
-			/*vtRequestedDataType*/ VT,
+			/*vtRequestedDataType*/ TypesVT[indice],
 			/*wReserved*/0
 			} };
 
@@ -185,6 +190,79 @@ void WriteItem(IUnknown* pGroupIUnknown, DWORD Count, OPCHANDLE hServerItem, VAR
 
 
 void opcClient(void) {
+	IOPCServer* pIOPCServer = NULL;   //pointer to IOPServer interface
+	IOPCItemMgt* pIOPCItemMgt = NULL; //pointer to IOPCItemMgt interface
+
+	OPCHANDLE hServerGroup; // server handle to the group
+	OPCHANDLE hServerItem[10];
+
+	int i;
+	char buf[100];
+
+	// Have to be done before using microsoft COM library:
+	printf("Initializing the COM environment...\n");
+	CoInitialize(NULL);
+
+	// Let's instantiante the IOPCServer interface and get a pointer of it:
+	printf("Instantiating the MATRIKON OPC Server for Simulation...\n");
+	pIOPCServer = InstantiateServer((LPWSTR)"Matrikon.OPC.Simulation.1");
+
+	// Testa a Coneção
+	if (pIOPCServer != NULL) {
+		cout << " Conexao Realizada!\n";
+	}
+	else {
+		cout << " Erro na Conexão!\n";
+	}
+
+	// Add the OPC group the OPC server and get an handle to the IOPCItemMgt
+	//interface:
+	printf("Adding a group in the INACTIVE state for the moment...\n");
+	AddTheGroup(pIOPCServer, pIOPCItemMgt, hServerGroup);
+
+	// Add the OPC item. First we have to convert from wchar_t* to char*
+	// in order to print the item name in the console.
+	
+	
+	for (i = 0; i < 10; i++) {
+		size_t m;
+		wcstombs_s(&m, buf, 100, ITEM_IDS[i], _TRUNCATE);
+		AddTheItem(pIOPCItemMgt, hServerItem[i], i+1);
+		printf("ITEM %i --- Adding the item %s to the group...\n", i, buf);
+	}
+
+	/* ordem dos itens
+	
+	 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
+	 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
+	 2 -  Temperatura motor de translação (C)             - Saw-toothed Waves.Real4  - leitura 
+	 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
+	 4 -  Velocidade de translação (cm/s)                 - Bucket Brigade.Real4     - Escrita
+	 5 -  Coordenada espacial X do ponto de ataque (cm)   - Bucket Brigade.UInt1     - Escrita
+	 6 -  Coordenada espacial Y do ponto de ataque (cm)   - Bucket Brigade.UInt2     - Escrita
+	 7 -  Coordenada espacial Z do ponto de ataque (cm)   - Bucket Brigade.UInt4     - Escrita
+	 8 -  Taxa de recuperação de minério (kg/min)         - Bucket Brigade.Real8     - Escrita
+	*/
+
+
+	// Remove the OPC item:
+	for (i = 0; i < 10; i++) {
+		printf("Removing the OPC item...\n");
+		RemoveItem(pIOPCItemMgt, hServerItem[i]);
+	}
+
+	// Remove the OPC group:
+	printf("Removing the OPC group object...\n");
+	pIOPCItemMgt->Release();
+	RemoveGroup(pIOPCServer, hServerGroup);
+
+	// release the interface references:
+	printf("Removing the OPC server object...\n");
+	pIOPCServer->Release();
+
+	//close the COM library:
+	printf("Releasing the COM environment...\n");
+	CoUninitialize();
 
 
 }
