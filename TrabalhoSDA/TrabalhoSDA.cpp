@@ -44,15 +44,13 @@ typedef unsigned* CAST_LPDWORD;
 
 
 //-----Variáveis Globais----//
-int nseq = 1, Tecla=0;
+int nseq = 0, Tecla=0;
 HANDLE hEventoESC, hEventoP, hEvento[3];
 //Variaveis timer
 HANDLE hTimer;
 LARGE_INTEGER Present;
 // Funções de Criação das Mensagens
 char*  novaMensagem11(int nseq);
-char*  novaMensagem33(int nseq);
-char*  novaMensagem99(int nseq);
 
 DWORD WINAPI ThreadTeclado(LPVOID index);
 
@@ -87,14 +85,14 @@ int main(int argc, char **argv)
 
 	//Criação do Temporizador//
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
-	Present.QuadPart = -(10000 * 200);
-	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+	//Present.QuadPart = -(10000 * 200);
+	//status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
 	//Criação das mensagens//
-	char msgstatus[TAMSTATUS + 1];
+	char msgstatus[TAMSTATUS + 1]= "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
 	char msgack99[TAMACK + 1] = "NNNNNN$99";
 	char msgreq[TAMREQ + 1] = "NNNNNN$33";
-	char msgpos[TAMPOS + 1] = "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
+	char msgpos[TAMPOS + 1];
 	char msgack22[TAMACK + 1];
 	char buf[100];
 
@@ -155,6 +153,9 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 		}
+		else {
+			cout << "Conexao com o Sistema de Mapeamento 3D (servidor) efetuada com sucesso" << endl;
+		}
 		while (Tecla!=ESC) {
 			int tipo;
 			DWORD ret;
@@ -167,24 +168,31 @@ int main(int argc, char **argv)
 			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
 			tipo = ret - WAIT_OBJECT_0;
 			
-			//printf("Tipo é %d\n", tipo);
+			printf("Tipo é %d\n", tipo);
 			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
-			if (tipo == 0) {
-			//Envio mensagem tipo 11
-				//recv 22 aqui dentro
-				//printf("Mensagem do tipo 11 será enviada\n");
-				//msgpos=
-				//strcpy(msg, "000128$11$983211$9999.1$8888.2");
-				//msg = novaMensagem11(nseq);
+			
+			if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
+
 				//chamar nossa função para conseguir arrumar a msg pos pra envia-la
-				cout << "msg tipo 11" << msgpos << endl;
-				statusSocket = send(s, msgpos, TAMSTATUS, 0);
-				cout << msgpos << endl;
-				//Verificar status e printar na tela
+	
+				statusSocket = send(s, msgstatus, TAMSTATUS, 0);
+				if (statusSocket == TAMSTATUS) {
+					printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+				}
+				else {
+					if (statusSocket == 0)
+						cout << "Algum tipo de erro inesperado ocorreu" << endl;
+					else if (statusSocket == SOCKET_ERROR) {
+						statusSocket = WSAGetLastError();
+						printf("Falha no envio da mensagem tipo 11 codigo de erro = %d\n", statusSocket);
+					}
+					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+					break;
+				}
 				
 				//Aguarda recebimento do ACK22
 				statusSocket = recv(s, buf, TAMACK, 0);
@@ -199,7 +207,7 @@ int main(int argc, char **argv)
 					nseq = nseqaux;
 					if (strncmp(&buf[7], "22", 2) == !0) {
 						strncpy(msgack22, buf, TAMACK + 1);
-						printf("Mensagem de ACK recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
+						printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
 					}
 					else {
 						printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
@@ -211,45 +219,80 @@ int main(int argc, char **argv)
 				}
 
 			}
-			//Enviar mensagem 33
-			else if (tipo == 1) {
+			else if (tipo == 1) {// Envio da mensagem 33 recebimento da mensagem 55 e setar evento p/ ACK99
 			//printf("Tipo é %d\n", tipo);
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
+				//Formatação da mensagem p/ o envio
 				memset(buf, 0, sizeof(buf));
-				sprintf(buf, "%06d", ++nseq);
+				sprintf(buf, "%06d", nseq);
 				memcpy(msgreq, buf, 6);
-				status = send(s, msgreq, TAMREQ, 0);
+				statusSocket = send(s, msgreq, TAMREQ, 0);
 				//Verificar status e printar na tela
-				printf("Mensagem de Requisição de Dados enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
-				//receber mensagem 55
-				status = recv(s, buf, TAMPOS, 0);
+				if (statusSocket == TAMREQ) {
+					printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
+				}
+				else {
+					if (statusSocket == 0)
+						cout << "Algum tipo de erro inesperado ocorreu" << endl;
+					else if (statusSocket == SOCKET_ERROR) {
+						statusSocket = WSAGetLastError();
+						printf("Falha no envio da mensagem tipo 22 codigo de erro = %d\n", statusSocket);
+					}
+					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+					break;
+				}
+				//Recebendo msg 55
+				statusSocket = recv(s, buf, TAMPOS, 0);
 				sscanf(buf, "%6d", &nseqaux);
 				if (++nseq != nseqaux) {
+					
 					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
 					closesocket(s);
 					WSACleanup();
 					exit(0);
 				}
-				if (strncmp(&buf[7], "55", 2) == 0) {
-
-				}
 				else {
-
+					if (strncmp(&buf[7], "55", 2) == 0) {
+						cout << "Tamanho buffer" << sizeof(buf) << endl;
+						nseq = nseqaux;
+						strncpy(&msgpos[TAMPOS], buf, TAMPOS+1);
+						printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+						SetEvent(hACK99);
+					}
+					else {
+						printf("Codigo incorreto do recebimento da msg tipo 55, código recebido foi %s\n", &buf[7]);
+						printf("Encerrando o programa...\n");
+					}
 				}
-
 			}
-			else if (tipo == 2) {
-				char* msg;
-				msg = novaMensagem99(nseq);
+			else if (tipo == 2) {//Envio do ACK99
 				nseq++;
 				if (nseq == 99999) {
 					nseq = 1;
 				}
-				statusSocket = send(s, msg, TAMACK, 0);
-			// Enviar msg 99 que é o ack
+				//Formatação da mensagem p/ o envio
+				memset(buf, 0, sizeof(buf));
+				sprintf(buf, "%06d", nseq);
+				memcpy(msgack99, buf, 6);
+				statusSocket = send(s, msgack99, TAMREQ, 0);
+				//Verificar status e printar na tela
+				if (statusSocket == TAMACK) {
+					printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
+				}
+				else {
+					if (statusSocket == 0)
+						cout << "Algum tipo de erro inesperado ocorreu" << endl;
+					else if (statusSocket == SOCKET_ERROR) {
+						statusSocket = WSAGetLastError();
+						printf("Falha no envio da mensagem tipo 99 codigo de erro = %d\n", statusSocket);
+					}
+					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+					break;
+				}
+
 			}
 
 		}
@@ -282,7 +325,7 @@ int main(int argc, char **argv)
 DWORD WINAPI ThreadTeclado(LPVOID index) {
 	// Eventos
 	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
-	hEventoP= CreateEvent(NULL, TRUE, FALSE, L"EventoP"); // reset automatico
+	hEventoP= CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
 
 	int status; 
 	do {
@@ -340,50 +383,6 @@ char* novaMensagem11(int nseq) {
 	cout << "Enviando smg 11\n" << sizeof(msg) << "tamanho outro" << sizeof(texto) << endl;
 
 	return texto;
-}
-
-char* novaMensagem33(int nseq) {
-	string msg;
-	char parte[5];
-	char texto[TAMREQ];
-	
-
-	sprintf(parte, "%05d", nseq);
-	msg = parte;
-	msg += "$";
-	msg += to_string(33);
-
-
-	strcpy(texto, msg.c_str());
-
-
-
-
-
-	return texto;
-
-
-
-
-}
-
-char* novaMensagem99(int nseq) {
-	string msg;
-	char parte[5];
-	char texto[TAMREQ];
-	
-
-	sprintf(parte, "%05d", nseq);
-	msg = parte;
-	msg += "$";
-	msg += to_string(99);
-
-	strcpy(texto, msg.c_str());
-
-
-	return texto;
-
-
 }
 
 DWORD WINAPI OPCClient(LPVOID index) {
