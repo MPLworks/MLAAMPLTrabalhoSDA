@@ -9,15 +9,42 @@
 #include "SOCDataCallback.h"
 #include "SOCWrapperFunctions.h"
 
+#define VT VT_R4
+wchar_t ITEM_ID[] = L"Saw-toothed Waves.Real4";
+
 wchar_t ServerName[] = L"Matrikon.OPC.Simulation.1";
 UINT OPC_DATA_TIME = RegisterClipboardFormat(_T("OPCSTMFORMATDATATIME"));
 
-wchar_t* ITEM_IDS[10] = { (LPWSTR)"Random.UInt1",(LPWSTR)"Random.Real",
+
+wchar_t ITEM_ID0[] = L"Random.UInt1";
+wchar_t ITEM_ID1[] = L"Random.Real";
+wchar_t ITEM_ID2[] = L"Saw-toothed Waves.Real4";
+wchar_t ITEM_ID3[] = L"Square Waves.Real4";
+wchar_t ITEM_ID4[] = L"Bucket Brigade.Real4";
+wchar_t ITEM_ID5[] = L"Bucket Brigade.UInt1";
+wchar_t ITEM_ID6[] = L"Bucket Brigade.UInt2";
+wchar_t ITEM_ID7[] = L"Bucket Brigade.UInt4";
+wchar_t ITEM_ID8[] = L"Bucket Brigade.Real8";
+
+#define VT0 VT_UI1
+#define VT1 VT_R4
+#define VT2 VT_R4
+#define VT3 VT_R4
+#define VT4 VT_R4
+#define VT5 VT_UI1
+#define VT6 VT_UI2
+#define VT7 VT_UI4
+#define VT8 VT_R8
+
+
+/*
+wchar_t* ITEM_IDS[9] = { (LPWSTR)"Random.UInt1",(LPWSTR)"Random.Real",
 (LPWSTR)"Saw-toothed Waves.Real4",(LPWSTR)"Square Waves.Real4",(LPWSTR)"Bucket Brigade.Real4",
 (LPWSTR)"Bucket Brigade.UInt1",(LPWSTR)"Bucket Brigade.UInt2",(LPWSTR)"Bucket Brigade.UInt4",
 (LPWSTR)"Bucket Brigade.Real8" };
 
-int TypesVT[10] = { VT_UI1,VT_R4,VT_R4,VT_R4,VT_R4,VT_UI1,VT_UI2,VT_UI4,VT_R8 };
+int TypesVT[9] = { VT_UI1,VT_R4,VT_R4,VT_R4,VT_R4,VT_UI1,VT_UI2,VT_UI4,VT_R8 };*/
+
 
 IOPCServer* InstantiateServer(wchar_t ServerName[])
 {
@@ -74,19 +101,20 @@ void AddTheGroup(IOPCServer* pIOPCServer, IOPCItemMgt*& pIOPCItemMgt,OPCHANDLE& 
 	_ASSERT(!FAILED(hr));
 }
 
-void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int indice) {
+void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem,int indice, LPWSTR* vec, int* vec2){
 	HRESULT hr;
 
 	// Array of items to add:
-	OPCITEMDEF ItemArray[1] =
+
+		OPCITEMDEF ItemArray[1] =
 	{ {
 			/*szAccessPath*/ (LPWSTR)"",
-			/*szItemID*/  LPWSTR(ITEM_IDS[indice]),
+			/*szItemID*/ vec[indice],
 			/*bActive*/ TRUE,
 			/*hClient*/ indice,
 			/*dwBlobSize*/ 0,
 			/*pBlob*/ NULL,
-			/*vtRequestedDataType*/ TypesVT[indice],
+			/*vtRequestedDataType*/ vec2[indice],
 			/*wReserved*/0
 			} };
 
@@ -95,7 +123,7 @@ void AddTheItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE& hServerItem, int indice) {
 	HRESULT* pErrors = NULL;
 
 	// Add an Item to the previous Group:
-	hr = pIOPCItemMgt->AddItems(indice, ItemArray, &pAddResult, &pErrors);
+	hr = pIOPCItemMgt->AddItems(1, ItemArray, &pAddResult, &pErrors);
 	if (hr != S_OK) {
 		printf("Failed call to AddItems function. Error code = %x\n", hr);
 		exit(0);
@@ -192,9 +220,9 @@ void WriteItem(IUnknown* pGroupIUnknown, DWORD Count, OPCHANDLE hServerItem, VAR
 void opcClient(void) {
 	IOPCServer* pIOPCServer = NULL;   //pointer to IOPServer interface
 	IOPCItemMgt* pIOPCItemMgt = NULL; //pointer to IOPCItemMgt interface
-
+	OPCHANDLE hServerItem[9]; // server handle to the group
 	OPCHANDLE hServerGroup; // server handle to the group
-	OPCHANDLE hServerItem[10];
+	
 
 	int i;
 	char buf[100];
@@ -222,14 +250,15 @@ void opcClient(void) {
 
 	// Add the OPC item. First we have to convert from wchar_t* to char*
 	// in order to print the item name in the console.
-	
-	
-	for (i = 0; i < 10; i++) {
-		size_t m;
-		wcstombs_s(&m, buf, 100, ITEM_IDS[i], _TRUNCATE);
-		AddTheItem(pIOPCItemMgt, hServerItem[i], i);
-		printf("ITEM %i --- Adding the item %s to the group...\n", i, buf);
+
+	int vec2[9] = { VT0,VT1,VT2,VT3,VT4,VT5,VT6,VT7,VT8};
+	LPWSTR vec[9] = { ITEM_ID0,ITEM_ID1, ITEM_ID2, ITEM_ID3, ITEM_ID4, ITEM_ID5, ITEM_ID6, ITEM_ID7, ITEM_ID8};
+
+	for (i = 0; i < 9; i++) {
+		printf("ADDing the OPC item %i...\n",i);
+		AddTheItem(pIOPCItemMgt, hServerItem[i], i, vec, vec2);
 	}
+
 
 	/* ordem dos itens
 	
@@ -244,10 +273,42 @@ void opcClient(void) {
 	 8 -  Taxa de recuperação de minério (kg/min)         - Bucket Brigade.Real8     - Escrita
 	*/
 
+	// Establish a callback asynchronous read by means of the old IAdviseSink()
+	// (OPC DA 1.0) method. We first instantiate a new SOCAdviseSink object and
+	// adjusts its reference count, and then call a wrapper function to
+	// setup the callback.
+	IDataObject* pIDataObject = NULL; //pointer to IDataObject interface
+	DWORD tkAsyncConnection = 0;
+	SOCAdviseSink* pSOCAdviseSink = new SOCAdviseSink();
+	pSOCAdviseSink->AddRef();
+	printf("Setting up the IAdviseSink callback connection...\n");
+	SetAdviseSink(pIOPCItemMgt, pSOCAdviseSink, pIDataObject, &tkAsyncConnection);
+
+	// Change the group to the ACTIVE state so that we can receive the
+   // server´s callback notification
+	printf("Changing the group state to ACTIVE...\n");
+	SetGroupActive(pIOPCItemMgt);
+
+	int bRet;
+	MSG msg;
+	DWORD ticks1, ticks2;
+	ticks1 = GetTickCount();
+	printf("Waiting for IAdviseSink callback notifications during 10 seconds...\n");
+
+	//Leitura:
+
+
+	//Escrita:
+
+
+	// Cancel the callback and release its reference
+	printf("Cancelling the IAdviseSink callback...\n");
+	CancelAdviseSink(pIDataObject, tkAsyncConnection);
+	pSOCAdviseSink->Release();
 
 	// Remove the OPC item:
-	for (i = 0; i < 10; i++) {
-		printf("Removing the OPC item...\n");
+	for (i = 0; i < 9; i++) {
+		printf("Removing the OPC item %i...\n",i);
 		RemoveItem(pIOPCItemMgt, hServerItem[i]);
 	}
 

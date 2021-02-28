@@ -58,7 +58,10 @@ DWORD WINAPI OPCClient (LPVOID index);
 
 int main(int argc, char **argv)
 {	
-	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
+
+	opcClient();
+
+	/*SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
@@ -144,7 +147,7 @@ int main(int argc, char **argv)
 				/*else {
 					Sleep(5000);
 					continue;
-				}*/
+				}
 			}
 			else {
 				printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
@@ -318,7 +321,8 @@ int main(int argc, char **argv)
 	CloseHandle(hTimer);
 	CloseHandle(hACK99);
 	
-    
+    */
+
     return(0);
 }
 
