@@ -1,11 +1,10 @@
 #ifndef OPC_CLIENT_H
 #define OPC_CLIENT_H
 
+
 /*
-
-* Modificação do 'SimpleOPCClient_v3.cpp' diponibilizado pelo 
+* Modificação do 'SimpleOPCClient_v3.cpp' diponibilizado pelo
 professor Luiz Themystokliz (based on the KEPWARE´s sample client code).
-
 */
 
 #undef UNICODE
@@ -46,5 +45,5 @@ void ReadItem(IUnknown* pGroupIUnknown, OPCHANDLE hServerItem, VARIANT& varValue
 void RemoveItem(IOPCItemMgt* pIOPCItemMgt, OPCHANDLE hServerItem);
 void RemoveGroup(IOPCServer* pIOPCServer, OPCHANDLE hServerGroup);
 void WriteItem(IUnknown* pGroupIUnknown, DWORD dwCount, OPCHANDLE hServerItem, VARIANT& varValue);
-void opcClient(void);
+VARIANT opcClient(VARIANT* varValueW,int i);
 #endif

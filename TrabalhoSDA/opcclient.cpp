@@ -217,7 +217,22 @@ void WriteItem(IUnknown* pGroupIUnknown, DWORD Count, OPCHANDLE hServerItem, VAR
 }
 
 
-void opcClient(void) {
+VARIANT opcClient(VARIANT* varValueW, int times) {
+
+	VARIANT varValueR[4]; //to store the read value
+	//VARIANT varValueW[5]; //to store the write value
+
+	//Inicaialização das Variaveis de comunicação com o servidor OPC
+	VariantInit(&varValueR[0]); // 0 -  Taxa de recuperação de minério
+	VariantInit(&varValueR[1]); // 1 -  Potência atual consumida (kW) 
+	VariantInit(&varValueR[2]); // 2 -  Temperatura motor de translação (C)
+	VariantInit(&varValueR[3]); // 3 -  Temperatura motor da roda de caçambas (C)
+
+
+	
+
+
+
 	IOPCServer* pIOPCServer = NULL;   //pointer to IOPServer interface
 	IOPCItemMgt* pIOPCItemMgt = NULL; //pointer to IOPCItemMgt interface
 	OPCHANDLE hServerItem[9]; // server handle to the group
@@ -251,8 +266,9 @@ void opcClient(void) {
 	// Add the OPC item. First we have to convert from wchar_t* to char*
 	// in order to print the item name in the console.
 
-	int vec2[9] = { VT0,VT1,VT2,VT3,VT4,VT5,VT6,VT7,VT8};
+	
 	LPWSTR vec[9] = { ITEM_ID0,ITEM_ID1, ITEM_ID2, ITEM_ID3, ITEM_ID4, ITEM_ID5, ITEM_ID6, ITEM_ID7, ITEM_ID8};
+	int vec2[9] = { VT0,VT1,VT2,VT3,VT4,VT5,VT6,VT7,VT8 };
 
 	for (i = 0; i < 9; i++) {
 		printf("ADDing the OPC item %i...\n",i);
@@ -266,6 +282,7 @@ void opcClient(void) {
 	 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
 	 2 -  Temperatura motor de translação (C)             - Saw-toothed Waves.Real4  - leitura 
 	 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
+
 	 4 -  Velocidade de translação (cm/s)                 - Bucket Brigade.Real4     - Escrita
 	 5 -  Coordenada espacial X do ponto de ataque (cm)   - Bucket Brigade.UInt1     - Escrita
 	 6 -  Coordenada espacial Y do ponto de ataque (cm)   - Bucket Brigade.UInt2     - Escrita
@@ -277,39 +294,32 @@ void opcClient(void) {
 
 	//Synchronous read of the device´s item value.
 
-		VARIANT varValueR[4]; //to store the read value
-		VariantInit(&varValueR[0]); // 0 -  Taxa de recuperação de minério
-		VariantInit(&varValueR[1]); // 1 -  Potência atual consumida (kW) 
-		VariantInit(&varValueR[2]); // 2 -  Temperatura motor de translação (C)
-		VariantInit(&varValueR[3]); // 3 -  Temperatura motor da roda de caçambas (C)
-
+	switch (times)
+	{
+	case 0 :
 		ReadItem(pIOPCItemMgt, hServerItem[0], varValueR[0]);
+		break;
+	case 1:
 		ReadItem(pIOPCItemMgt, hServerItem[1], varValueR[1]);
+		break;
+	case 2:
 		ReadItem(pIOPCItemMgt, hServerItem[2], varValueR[2]);
+		break;
+	case 3:
 		ReadItem(pIOPCItemMgt, hServerItem[3], varValueR[3]);
+		break;
+	default:
+		break;
+	}
 
-		printf("Read value: %06d\n", varValueR[0].intVal);
-		printf("Read value: %06.2f\n", varValueR[1].fltVal);
-		printf("Read value: %06.2f\n", varValueR[2].fltVal);
-		printf("Read value: %06.2f\n", varValueR[3].fltVal);
-
+		
+		
+		
+		
 
 
 	//Escrita:
 
-		VARIANT varValueW[5]; //to store the write value
-		VariantInit(&varValueW[0]); //  4 -  Velocidade de translação (cm/s) 
-		VariantInit(&varValueW[1]); //  5 -  Coordenada espacial X do ponto de ataque (cm) 
-		VariantInit(&varValueW[2]); //  6 -  Coordenada espacial Y do ponto de ataque (cm)
-		VariantInit(&varValueW[3]); //  7 -  Coordenada espacial Z do ponto de ataque (cm)
-		VariantInit(&varValueW[4]); //  8 -  Taxa de recuperação de minério (kg/min) 
-
-
-		varValueW[0].fltVal =321.12;
-		varValueW[1].intVal = 2;
-		varValueW[2].intVal = 3;
-		varValueW[3].intVal = 4;
-		varValueW[4].fltVal = 35.412;
 
 		varValueW[0].vt = vec2[4];
 		varValueW[1].vt = vec2[5];
@@ -325,24 +335,7 @@ void opcClient(void) {
 		WriteItem(pIOPCItemMgt, 1, hServerItem[7], varValueW[3]);
 		WriteItem(pIOPCItemMgt, 1, hServerItem[8], varValueW[4]);
 
-		varValueW[0].fltVal = 1;
-		varValueW[1].intVal = 10;
-		varValueW[2].intVal = 10;
-		varValueW[3].intVal = 10;
-		varValueW[4].fltVal = 1;
 
-		
-		ReadItem(pIOPCItemMgt, hServerItem[4], varValueW[0]);
-		ReadItem(pIOPCItemMgt, hServerItem[5], varValueW[1]);
-		ReadItem(pIOPCItemMgt, hServerItem[6], varValueW[2]);
-		ReadItem(pIOPCItemMgt, hServerItem[7], varValueW[3]);
-		ReadItem(pIOPCItemMgt, hServerItem[8], varValueW[4]);
-	
-		printf("Read value: %06.2f\n", varValueW[0].fltVal);
-		printf("Read value: %06d\n",   varValueW[1].intVal);
-		printf("Read value: %06d\n",   varValueW[2].intVal);
-		printf("Read value: %06d\n",   varValueW[3].intVal);
-		printf("Read value: %06.2f\n", varValueW[4].fltVal);
 
 
 
@@ -398,5 +391,5 @@ void opcClient(void) {
 	printf("Releasing the COM environment...\n");
 	CoUninitialize();
 
-
+	return varValueR[times];
 }

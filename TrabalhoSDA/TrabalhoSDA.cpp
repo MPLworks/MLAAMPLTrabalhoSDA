@@ -49,6 +49,10 @@ HANDLE hEventoESC, hEventoP, hEvento[3];
 //Variaveis timer
 HANDLE hTimer;
 LARGE_INTEGER Present;
+
+VARIANT varValueW[5]; //to store the write value
+VARIANT varValueR[4]; //to store the read value
+
 // Funções de Criação das Mensagens
 char*  novaMensagem11(int nseq);
 
@@ -58,10 +62,14 @@ DWORD WINAPI OPCClient (LPVOID index);
 
 int main(int argc, char **argv)
 {	
+	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
 
-	opcClient();
+	VariantInit(&varValueW[0]); //  4 -  Velocidade de translação (cm/s) 
+	VariantInit(&varValueW[1]); //  5 -  Coordenada espacial X do ponto de ataque (cm) 
+	VariantInit(&varValueW[2]); //  6 -  Coordenada espacial Y do ponto de ataque (cm)
+	VariantInit(&varValueW[3]); //  7 -  Coordenada espacial Z do ponto de ataque (cm)
+	VariantInit(&varValueW[4]); //  8 -  Taxa de recuperação de minério (kg/min)
 
-	/*SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
     //Variáveis socket//
     WSADATA wsaData;
     SOCKET s;
@@ -147,7 +155,7 @@ int main(int argc, char **argv)
 				/*else {
 					Sleep(5000);
 					continue;
-				}
+				}*/
 			}
 			else {
 				printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
@@ -263,6 +271,27 @@ int main(int argc, char **argv)
 						nseq = nseqaux;
 						strncpy(msgpos, buf, TAMPOS+1);
 						printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+
+						string escreve = msgpos;
+
+						//0 0 6 7 3 3 $ 5 5 $ 0  0  0  1  .  0  $  0  0  8  0  0  $  0  0  2  0  5  $  0  0  7  5  0  $  0  8  0  0  .  0
+						//0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
+
+
+
+						
+						varValueW[0].fltVal = stof(escreve.substr(10,6));
+						varValueW[1].intVal = stoi( escreve.substr(17,5));
+						varValueW[2].intVal = stoi(escreve.substr(23,5));
+						varValueW[3].intVal = stoi(escreve.substr(29,5));
+						varValueW[4].fltVal = stof(escreve.substr(35,6));
+						
+
+
+
+
+
+
 						SetEvent(hACK99);
 					}
 					else {
@@ -321,7 +350,7 @@ int main(int argc, char **argv)
 	CloseHandle(hTimer);
 	CloseHandle(hACK99);
 	
-    */
+   
 
     return(0);
 }
@@ -363,27 +392,35 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 
 char* novaMensagem11(int nseq) {
+	/*
+	 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
+	 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
+	 2 -  Temperatura motor de translação (C)             - Saw-toothed Waves.Real4  - leitura
+	 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
+		
+	*/
 	cout << "criando msg 11\n";
 	string msg;
 	char parte[6];
 	char texto[TAMSTATUS+1];
-	int aux = rand() % 999999;
+	
 
 	sprintf(parte, "%06d", nseq);
-	msg = parte;
-	msg += "$";
-	msg += to_string(11) + "$";
-	msg += to_string(rand()%999999) + "$";
-	aux = rand() % 99999;
-	msg += to_string((float)aux / 10) + "$";
-	aux = rand() % 9999;
-	msg += to_string((float)aux / 10) + "$";
-	aux = rand() % 9999;
-	msg += to_string((float)aux / 10);
-	cout << "A msg e" << msg << endl;
+	msg = parte + '$';
 
-	//char* texto = new char[msg.size() + 1];
-	strcpy(texto, msg.c_str()+1);
+
+
+	/*
+	sprintf(parte, "%06d", varValueR[0].intVal);
+	msg = msg + parte + '$';
+	sprintf(parte, "%04.2f", varValueR[1].fltVal);
+	msg = msg + parte + '$';
+	sprintf(parte, "%04.2f", varValueR[2].fltVal);
+	msg = msg + parte + '$';
+	sprintf(parte, "%04.2f", varValueR[3].fltVal);
+	msg = msg + parte;
+	*/
+	strcpy(texto, msg.c_str());
 	cout << "Enviando smg 11\n" << sizeof(msg) << "tamanho outro" << sizeof(texto) << endl;
 
 	return texto;
@@ -395,12 +432,15 @@ DWORD WINAPI OPCClient(LPVOID index) {
 	int encerramento=1;
 
 
+
 	do {
 		ret = WaitForSingleObject(hEvento,100);
 		encerramento= ret - WAIT_OBJECT_0;
 
-		//opcClient();
 
+		for (int i = 0; i < 4; i++) {
+			varValueR[i] = opcClient(varValueW,i);
+		}
 	}while (encerramento != 0);
 
 
