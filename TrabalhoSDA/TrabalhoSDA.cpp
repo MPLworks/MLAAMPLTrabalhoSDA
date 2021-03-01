@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
 			tipo = ret - WAIT_OBJECT_0;
 			
-			printf("Tipo é %d\n", tipo);
+			//printf("Tipo é %d\n", tipo);
 			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 			
 			if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
