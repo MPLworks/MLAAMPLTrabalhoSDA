@@ -54,8 +54,6 @@ VARIANT varValueW[5]; //to store the write value
 VARIANT varValueR[4]; //to store the read value
 
 // Funções de Criação das Mensagens
-char*  novaMensagem11(int nseq);
-
 DWORD WINAPI ThreadTeclado(LPVOID index);
 
 DWORD WINAPI OPCClient (LPVOID index);
@@ -104,12 +102,12 @@ int main(int argc, char **argv)
 
 	//Criação do Temporizador
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
-	//Present.QuadPart = -(10000 * 200);
-	//status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
+	Present.QuadPart = -(10000 * 200);
+	status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
 
 	//Criação das mensagens
-	char msgstatus[TAMSTATUS + 1]= "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
+	char msgstatus[TAMSTATUS + 1];
 	char msgack99[TAMACK + 1] = "NNNNNN$99";
 	char msgreq[TAMREQ + 1] = "NNNNNN$33";
 	char msgpos[TAMPOS + 1];
@@ -211,12 +209,69 @@ int main(int argc, char **argv)
 					if (nseq == 99999) {
 						nseq = 1;
 					}
+					//msgstatus=novaMensagem11(nseq);
+					/*
+					 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
+					 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
+					 2 -  Temperatura motor de translação (C)             - Saw-toothed Waves.Real4  - leitura
+					 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
 
+					*/
+					cout << "criando msg 11\n";
+					string msg;
+					char parte[6];
+					char texto[TAMSTATUS + 1];
+
+					memset(parte, 0, sizeof(parte));
+
+					sprintf(parte, "%06d", nseq);
+					for (int j = 0; j < 6; j++)
+						msg += parte[j];
+					msg += '$';
+					//msg = parte + '$';
+					cout << "teste msg com nseq" << msg << endl;
+					msg += "11$";
+					memset(parte, 0, sizeof(parte));
+					sprintf(parte, "%06d", varValueR[0].intVal);
+					for (int j = 0; j < 6; j++)
+						msg += parte[j];
+					msg += '$';
+
+					memset(parte, 0, sizeof(parte));
+					sprintf(parte, "%04.2f", varValueR[1].fltVal);
+					for (int j = 0; j < 6; j++)
+						msg += parte[j];
+					msg += '$';
+
+					memset(parte, 0, sizeof(parte));
+					sprintf(parte, "%04.2f", varValueR[2].fltVal);
+					for (int j = 0; j < 6; j++)
+						msg += parte[j];
+					msg += '$';;
+					memset(parte, 0, sizeof(parte));
+					sprintf(parte, "%04.2f", varValueR[3].fltVal);
+					for (int j = 0; j < 6; j++)
+						msg += parte[j];
+
+					//strcpy(texto, msg.c_str());
+					cout << "Qro ver a msg" << msg << endl;
+					for (int j = 0; j < TAMSTATUS + 1; j++)
+						msgstatus[j] = msg[j];
+					//strncpy(msgstatus, msg.c_str(),43);
+					cout << "Enviando MSG STRING 11\n" << sizeof(msg) << "tamanhomsgnormal\n" << sizeof(msgstatus) << endl;
+
+
+					//cout << "msg 11 ta sendo enviada" << endl;
+					//string msgstatusaux;
+					//msgstatusaux= novaMensagem11(nseq);
+					cout << "Msg stat aux:" << msgstatus << endl;
+					//strcpy(msgstatus, msgstatusaux.c_str());
+					//cout <<"Msg stat aux:"<< msgstatusaux << endl;
 					//chamar nossa função para conseguir arrumar a msg pos pra envia-la
 
 					statusSocket = send(s, msgstatus, TAMSTATUS, 0);
 					if (statusSocket == TAMSTATUS) {
-						printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+						printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgstatus);
 					}
 					else {
 						if (statusSocket == 0)
@@ -231,16 +286,16 @@ int main(int argc, char **argv)
 
 					//Aguarda recebimento do ACK22
 					statusSocket = recv(s, buf, TAMACK, 0);
-					sscanf(msgack22, "%6d", &nseqaux);
+					sscanf(buf, "%6d", &nseqaux);
 					if (++nseq != nseqaux) {
-						printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
+						printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq++);
 						closesocket(s);
 						WSACleanup();
 						exit(0);
 					}
 					else {
 						nseq = nseqaux;
-						if (strncmp(&buf[7], "22", 2) == !0) {
+						if (strncmp(&buf[7], "22", 2) == 0) {
 							strncpy(msgack22, buf, TAMACK + 1);
 							printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
 						}
@@ -416,42 +471,6 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 	_endthreadex((DWORD)index);
 	return(0);
 
-}
-
-
-char* novaMensagem11(int nseq) {
-	/*
-	 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
-	 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
-	 2 -  Temperatura motor de translação (C)             - Saw-toothed Waves.Real4  - leitura
-	 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
-		
-	*/
-	cout << "criando msg 11\n";
-	string msg;
-	char parte[6];
-	char texto[TAMSTATUS+1];
-	
-
-	sprintf(parte, "%06d", nseq);
-	msg = parte + '$';
-
-
-
-	/*
-	sprintf(parte, "%06d", varValueR[0].intVal);
-	msg = msg + parte + '$';
-	sprintf(parte, "%04.2f", varValueR[1].fltVal);
-	msg = msg + parte + '$';
-	sprintf(parte, "%04.2f", varValueR[2].fltVal);
-	msg = msg + parte + '$';
-	sprintf(parte, "%04.2f", varValueR[3].fltVal);
-	msg = msg + parte;
-	*/
-	strcpy(texto, msg.c_str());
-	cout << "Enviando smg 11\n" << sizeof(msg) << "tamanho outro" << sizeof(texto) << endl;
-
-	return texto;
 }
 
 DWORD WINAPI OPCClient(LPVOID index) {
