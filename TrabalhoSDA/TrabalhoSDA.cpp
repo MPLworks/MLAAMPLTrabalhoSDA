@@ -165,7 +165,6 @@ void main(int argc, char **argv)
 					printf("Codigo de erro = %d\n", statusSocket);
 				}
 				WSACleanup();
-				exit(0);
 			}
 			// Estabelece a conexão com o servidor
 			printf("Iniciando conexao com o Sistema de Mapeamento 3D...\n");
@@ -178,9 +177,7 @@ void main(int argc, char **argv)
 				}
 				else {
 					printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
-					WSACleanup();
 					closesocket(s);
-					exit(0);
 				}
 			}
 			else {
@@ -288,7 +285,7 @@ void main(int argc, char **argv)
 							printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D:\n%s\n", msgack22);
 						}
 						else {
-							printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
+							printf("Codigo incorreto do recebimento do ACK 22, codigo recebido foi %s\n", &buf[7]);
 							printf("Encerrando o programa...\n");
 							closesocket(s);
 							WSACleanup();
@@ -420,16 +417,11 @@ void main(int argc, char **argv)
 	CloseHandle(hACK99);
 	CloseHandle(hEventoP);
 	CloseHandle(hEventoESC);
-	
-
-	
    
 	exit(0);
 }
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
-
-
 	int status; 
 	do {
 		cout << "\n Tecle <p> para simular o evento de solitacao de mensagem \n <ESC> para sair \n";
@@ -462,18 +454,14 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 DWORD WINAPI OPCClient(LPVOID index) {
 
 	opcInit();
-
 	do {
-
 		for (int i = 0; i < 4; i++) {
 			varValueR[i] = opcClient(varValueW,i);
 		}
 
 	}while (Tecla != ESC);
-
 	cout << "Thread OPC encerrando...\n";
 	opcFinish();
-	
 	_endthreadex((DWORD)index);
 	return(0);
 
