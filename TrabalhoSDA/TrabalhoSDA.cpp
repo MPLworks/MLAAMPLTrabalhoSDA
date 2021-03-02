@@ -58,7 +58,7 @@ DWORD WINAPI ThreadTeclado(LPVOID index);
 
 DWORD WINAPI OPCClient (LPVOID index);
 
-int main(int argc, char **argv)
+void main(int argc, char **argv)
 {	
 	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
 
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 		
 		ret = WaitForSingleObject(hEvento, 100);
 		encerramento = ret - WAIT_OBJECT_0;
-		
+		nseq = 0;
 
 		if (encerramento == 0) {
 			break;
@@ -172,11 +172,9 @@ int main(int argc, char **argv)
 			statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
 			if (statusSocket == SOCKET_ERROR) {
 				if (WSAGetLastError() == WSAEHOSTUNREACH) {
-					printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
-					/*else {
-						Sleep(5000);
-						continue;
-					}*/
+					printf("Rede inacessivel. Esperando para tentar se reconectar!\n");
+					Sleep(10000);
+					continue;
 				}
 				else {
 					printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
@@ -189,7 +187,7 @@ int main(int argc, char **argv)
 				cout << "Conexao com o Sistema de Mapeamento 3D (servidor) efetuada com sucesso" << endl;
 			}
 
-			int tipo = 4;
+			int tipo;
 			/*----------------------------------------------------------------------------------
 											Loop da troca de mensagens
 			------------------------------------------------------------------------------------*/
@@ -359,6 +357,9 @@ int main(int argc, char **argv)
 						else {
 							printf("Codigo incorreto do recebimento da msg tipo 55, código recebido foi %s\n", &buf[7]);
 							printf("Encerrando o programa...\n");
+							closesocket(s);
+							WSACleanup();
+							exit(0);
 						}
 					}
 				}
@@ -423,8 +424,7 @@ int main(int argc, char **argv)
 
 	
    
-
-    return(0);
+	exit(0);
 }
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
