@@ -63,7 +63,6 @@ int main(int argc, char **argv)
 	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
 
 	//Inicializa variaves de escrita no OPC
-
 	VariantInit(&varValueW[0]); //  4 -  Velocidade de translação (cm/s) 
 	VariantInit(&varValueW[1]); //  5 -  Coordenada espacial X do ponto de ataque (cm) 
 	VariantInit(&varValueW[2]); //  6 -  Coordenada espacial Y do ponto de ataque (cm)
@@ -140,6 +139,10 @@ int main(int argc, char **argv)
 	DWORD ret;
     int encerramento = 1;
 	HANDLE hEvento = hEventoESC;
+
+	/*----------------------------------------------------------------------------------
+									Loop da conexão
+	------------------------------------------------------------------------------------*/
 	do{
 		
 		ret = WaitForSingleObject(hEvento, 100);
@@ -187,7 +190,9 @@ int main(int argc, char **argv)
 			}
 
 			int tipo = 4;
-
+			/*----------------------------------------------------------------------------------
+											Loop da troca de mensagens
+			------------------------------------------------------------------------------------*/
 			do {
 
 
@@ -197,19 +202,15 @@ int main(int argc, char **argv)
 				hEventos[2] = hACK99;
 				hEventos[3] = hEventoESC;
 
-
+				//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
 				ret = WaitForMultipleObjects(4, hEventos, FALSE, INFINITE);
 				tipo = ret - WAIT_OBJECT_0;
-
-				//printf("Tipo é %d\n", tipo);
-				//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
-
-				if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
+				//Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
+				if (tipo == 0) { 
 					nseq++;
 					if (nseq == 99999) {
 						nseq = 1;
 					}
-					//msgstatus=novaMensagem11(nseq);
 					/*
 					 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
 					 1 -  Potência atual consumida (kW)                   - Random.Real              - leitura
@@ -217,19 +218,17 @@ int main(int argc, char **argv)
 					 3 -  Temperatura motor da roda de caçambas (C)       - Square Waves.Real4       - leitura
 
 					*/
-					cout << "criando msg 11\n";
+					
 					string msg;
 					char parte[6];
-					char texto[TAMSTATUS + 1];
 
+					//Formatação da mensagem 11 de acordo com os dados que vieram do OPC 
 					memset(parte, 0, sizeof(parte));
-
 					sprintf(parte, "%06d", nseq);
 					for (int j = 0; j < 6; j++)
 						msg += parte[j];
 					msg += '$';
-					//msg = parte + '$';
-					cout << "teste msg com nseq" << msg << endl;
+
 					msg += "11$";
 					memset(parte, 0, sizeof(parte));
 					sprintf(parte, "%06d", varValueR[0].intVal);
@@ -253,25 +252,15 @@ int main(int argc, char **argv)
 					for (int j = 0; j < 6; j++)
 						msg += parte[j];
 
-					//strcpy(texto, msg.c_str());
-					cout << "Qro ver a msg" << msg << endl;
+					//Colocando a msg dentro da msgstatus
 					for (int j = 0; j < TAMSTATUS + 1; j++)
 						msgstatus[j] = msg[j];
-					//strncpy(msgstatus, msg.c_str(),43);
-					cout << "Enviando MSG STRING 11\n" << sizeof(msg) << "tamanhomsgnormal\n" << sizeof(msgstatus) << endl;
 
-
-					//cout << "msg 11 ta sendo enviada" << endl;
-					//string msgstatusaux;
-					//msgstatusaux= novaMensagem11(nseq);
-					cout << "Msg stat aux:" << msgstatus << endl;
-					//strcpy(msgstatus, msgstatusaux.c_str());
-					//cout <<"Msg stat aux:"<< msgstatusaux << endl;
-					//chamar nossa função para conseguir arrumar a msg pos pra envia-la
-
+			
+					//Envio da msg 11 
 					statusSocket = send(s, msgstatus, TAMSTATUS, 0);
 					if (statusSocket == TAMSTATUS) {
-						printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgstatus);
+						printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: \n%s\n", msgstatus);
 					}
 					else {
 						if (statusSocket == 0)
@@ -285,6 +274,7 @@ int main(int argc, char **argv)
 					}
 
 					//Aguarda recebimento do ACK22
+					memset(buf, 0, sizeof(buf));
 					statusSocket = recv(s, buf, TAMACK, 0);
 					sscanf(buf, "%6d", &nseqaux);
 					if (++nseq != nseqaux) {
@@ -297,7 +287,7 @@ int main(int argc, char **argv)
 						nseq = nseqaux;
 						if (strncmp(&buf[7], "22", 2) == 0) {
 							strncpy(msgack22, buf, TAMACK + 1);
-							printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
+							printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D:\n%s\n", msgack22);
 						}
 						else {
 							printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
@@ -309,8 +299,8 @@ int main(int argc, char **argv)
 					}
 
 				}
-				else if (tipo == 1) {// Envio da mensagem 33 recebimento da mensagem 55 e setar evento p/ ACK99
-				//printf("Tipo é %d\n", tipo);
+				// Envio da mensagem 33 recebimento da mensagem 55 e setar evento p/ ACK99
+				else if (tipo == 1) {
 					nseq++;
 					if (nseq == 99999) {
 						nseq = 1;
@@ -322,7 +312,7 @@ int main(int argc, char **argv)
 					statusSocket = send(s, msgreq, TAMREQ, 0);
 					//Verificar status e printar na tela
 					if (statusSocket == TAMREQ) {
-						printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
+						printf("Mensagem de requisicao enviada ao Sist. de mapeamento 3D: \n%s\n", msgreq);
 					}
 					else {
 						if (statusSocket == 0)
@@ -346,16 +336,14 @@ int main(int argc, char **argv)
 					}
 					else {
 						if (strncmp(&buf[7], "55", 2) == 0) {
-							cout << "Tamanho buffer" << sizeof(buf) << endl;
 							nseq = nseqaux;
 							strncpy(msgpos, buf, TAMPOS + 1);
-							printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+							printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: \n%s\n", msgpos);
 
 							string escreve = msgpos;
 
 							//0 0 6 7 3 3 $ 5 5 $ 0  0  0  1  .  0  $  0  0  8  0  0  $  0  0  2  0  5  $  0  0  7  5  0  $  0  8  0  0  .  0
 							//0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
-
 
 
 
@@ -366,11 +354,6 @@ int main(int argc, char **argv)
 							varValueW[4].fltVal = stof(escreve.substr(35, 6));
 
 
-
-
-
-
-
 							SetEvent(hACK99);
 						}
 						else {
@@ -379,7 +362,8 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-				else if (tipo == 2) {//Envio do ACK99
+				//Envio do ACK99
+				else if (tipo == 2) {
 					nseq++;
 					if (nseq == 99999) {
 						nseq = 1;
@@ -391,7 +375,7 @@ int main(int argc, char **argv)
 					statusSocket = send(s, msgack99, TAMACK, 0);
 					//Verificar status e printar na tela
 					if (statusSocket == TAMACK) {
-						printf("Ack 99 sendo enviado ao Sist. de mapeamento 3D: %s\n\n", msgack99);
+						printf("Mensagem de ACK tipo 99 enviada do Sist. de mapeamento 3D:: \n%s\n", msgack99);
 					}
 					else {
 						if (statusSocket == 0)
@@ -405,6 +389,7 @@ int main(int argc, char **argv)
 					}
 
 				}
+				//Evento ESC
 				else if (tipo == 3) {
 					break;
 				}
@@ -428,12 +413,13 @@ int main(int argc, char **argv)
 	}  // for 
 
 
-
+	
 	//Fechar Handles
 	CloseHandle(hTimer);
 	CloseHandle(hACK99);
 	CloseHandle(hEventoP);
 	CloseHandle(hEventoESC);
+	
 
 	
    
