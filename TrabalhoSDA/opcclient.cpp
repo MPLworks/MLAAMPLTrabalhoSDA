@@ -36,14 +36,11 @@ wchar_t ITEM_ID8[] = L"Bucket Brigade.Real8";
 #define VT7 VT_UI4
 #define VT8 VT_R8
 
+IOPCServer* pIOPCServer;   //pointer to IOPServer interface
+IOPCItemMgt* pIOPCItemMgt; //pointer to IOPCItemMgt interface
+OPCHANDLE hServerItem[9]; // server handle to the group
+OPCHANDLE hServerGroup; // server handle to the group
 
-/*
-wchar_t* ITEM_IDS[9] = { (LPWSTR)"Random.UInt1",(LPWSTR)"Random.Real",
-(LPWSTR)"Saw-toothed Waves.Real4",(LPWSTR)"Square Waves.Real4",(LPWSTR)"Bucket Brigade.Real4",
-(LPWSTR)"Bucket Brigade.UInt1",(LPWSTR)"Bucket Brigade.UInt2",(LPWSTR)"Bucket Brigade.UInt4",
-(LPWSTR)"Bucket Brigade.Real8" };
-
-int TypesVT[9] = { VT_UI1,VT_R4,VT_R4,VT_R4,VT_R4,VT_UI1,VT_UI2,VT_UI4,VT_R8 };*/
 
 
 IOPCServer* InstantiateServer(wchar_t ServerName[])
@@ -216,28 +213,9 @@ void WriteItem(IUnknown* pGroupIUnknown, DWORD Count, OPCHANDLE hServerItem, VAR
 	pIOPCSyncIO->Release();
 }
 
-
-VARIANT opcClient(VARIANT* varValueW, int times) {
-
-	VARIANT varValueR[4]; //to store the read value
-	//VARIANT varValueW[5]; //to store the write value
-
-	//Inicaialização das Variaveis de comunicação com o servidor OPC
-	VariantInit(&varValueR[0]); // 0 -  Taxa de recuperação de minério
-	VariantInit(&varValueR[1]); // 1 -  Potência atual consumida (kW) 
-	VariantInit(&varValueR[2]); // 2 -  Temperatura motor de translação (C)
-	VariantInit(&varValueR[3]); // 3 -  Temperatura motor da roda de caçambas (C)
-
-
-	
-
-
-
-	IOPCServer* pIOPCServer = NULL;   //pointer to IOPServer interface
-	IOPCItemMgt* pIOPCItemMgt = NULL; //pointer to IOPCItemMgt interface
-	OPCHANDLE hServerItem[9]; // server handle to the group
-	OPCHANDLE hServerGroup; // server handle to the group
-	
+void opcInit(void){
+	pIOPCServer = NULL;
+	pIOPCItemMgt = NULL;
 
 	int i;
 	char buf[100];
@@ -266,16 +244,37 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 	// Add the OPC item. First we have to convert from wchar_t* to char*
 	// in order to print the item name in the console.
 
-	
-	LPWSTR vec[9] = { ITEM_ID0,ITEM_ID1, ITEM_ID2, ITEM_ID3, ITEM_ID4, ITEM_ID5, ITEM_ID6, ITEM_ID7, ITEM_ID8};
+
+	LPWSTR vec[9] = { ITEM_ID0,ITEM_ID1, ITEM_ID2, ITEM_ID3, ITEM_ID4, ITEM_ID5, ITEM_ID6, ITEM_ID7, ITEM_ID8 };
 	int vec2[9] = { VT0,VT1,VT2,VT3,VT4,VT5,VT6,VT7,VT8 };
 
 	for (i = 0; i < 9; i++) {
-		printf("ADDing the OPC item %i...\n",i);
+		printf("ADDing the OPC item %i...\n", i);
 		AddTheItem(pIOPCItemMgt, hServerItem[i], i, vec, vec2);
 	}
 
 
+}
+
+VARIANT opcClient(VARIANT* varValueW, int times) {
+	
+
+	VARIANT varValueR[4]; //to store the read value
+	//VARIANT varValueW[5]; //to store the write value
+
+	//Inicaialização das Variaveis de comunicação com o servidor OPC
+	VariantInit(&varValueR[0]); // 0 -  Taxa de recuperação de minério
+	VariantInit(&varValueR[1]); // 1 -  Potência atual consumida (kW) 
+	VariantInit(&varValueR[2]); // 2 -  Temperatura motor de translação (C)
+	VariantInit(&varValueR[3]); // 3 -  Temperatura motor da roda de caçambas (C)
+
+
+	LPWSTR vec[9] = { ITEM_ID0,ITEM_ID1, ITEM_ID2, ITEM_ID3, ITEM_ID4, ITEM_ID5, ITEM_ID6, ITEM_ID7, ITEM_ID8 };
+	int vec2[9] = { VT0,VT1,VT2,VT3,VT4,VT5,VT6,VT7,VT8 };
+
+
+
+	
 	/* ordem dos itens
 	
 	 0 -  Taxa de recuperação de minério (kg/min)         - Random.UInt1             - leitura
@@ -320,7 +319,7 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 
 	//Escrita:
 
-
+		if(times==0){
 		varValueW[0].vt = vec2[4];
 		varValueW[1].vt = vec2[5];
 		varValueW[2].vt = vec2[6];
@@ -334,6 +333,7 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 		WriteItem(pIOPCItemMgt, 1, hServerItem[6], varValueW[2]);
 		WriteItem(pIOPCItemMgt, 1, hServerItem[7], varValueW[3]);
 		WriteItem(pIOPCItemMgt, 1, hServerItem[8], varValueW[4]);
+}
 
 
 
@@ -343,18 +343,12 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 
 
 
+	
+	return varValueR[times];
+}
 
-	// Establish a callback asynchronous read by means of the old IAdviseSink()
-	// (OPC DA 1.0) method. We first instantiate a new SOCAdviseSink object and
-	// adjusts its reference count, and then call a wrapper function to
-	// setup the callback.
-	IDataObject* pIDataObject = NULL; //pointer to IDataObject interface
-	DWORD tkAsyncConnection = 0;
-	SOCAdviseSink* pSOCAdviseSink = new SOCAdviseSink();
-	pSOCAdviseSink->AddRef();
-	printf("Setting up the IAdviseSink callback connection...\n");
-	SetAdviseSink(pIOPCItemMgt, pSOCAdviseSink, pIDataObject, &tkAsyncConnection);
-
+void opcFinish(void) {
+	int i;
 	// Change the group to the ACTIVE state so that we can receive the
    // server´s callback notification
 	printf("Changing the group state to ACTIVE...\n");
@@ -367,14 +361,9 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 	printf("Waiting for IAdviseSink callback notifications during 10 seconds...\n");
 
 
-	// Cancel the callback and release its reference
-	printf("Cancelling the IAdviseSink callback...\n");
-	CancelAdviseSink(pIDataObject, tkAsyncConnection);
-	pSOCAdviseSink->Release();
-
 	// Remove the OPC item:
 	for (i = 0; i < 9; i++) {
-		printf("Removing the OPC item %i...\n",i);
+		printf("Removing the OPC item %i...\n", i);
 		RemoveItem(pIOPCItemMgt, hServerItem[i]);
 	}
 
@@ -391,5 +380,4 @@ VARIANT opcClient(VARIANT* varValueW, int times) {
 	printf("Releasing the COM environment...\n");
 	CoUninitialize();
 
-	return varValueR[times];
 }

@@ -45,7 +45,7 @@ typedef unsigned* CAST_LPDWORD;
 
 //-----Variáveis Globais----//
 int nseq = 0, Tecla=0;
-HANDLE hEventoESC, hEventoP, hEvento[3];
+HANDLE hEventoESC, hEventoP;
 //Variaveis timer
 HANDLE hTimer;
 LARGE_INTEGER Present;
@@ -64,25 +64,29 @@ int main(int argc, char **argv)
 {	
 	SetConsoleTitle(L"Aplicacao de Software - Cliente Socket");
 
+	//Inicializa variaves de escrita no OPC
+
 	VariantInit(&varValueW[0]); //  4 -  Velocidade de translação (cm/s) 
 	VariantInit(&varValueW[1]); //  5 -  Coordenada espacial X do ponto de ataque (cm) 
 	VariantInit(&varValueW[2]); //  6 -  Coordenada espacial Y do ponto de ataque (cm)
 	VariantInit(&varValueW[3]); //  7 -  Coordenada espacial Z do ponto de ataque (cm)
 	VariantInit(&varValueW[4]); //  8 -  Taxa de recuperação de minério (kg/min)
 
-    //Variáveis socket//
+    //Variáveis socket
     WSADATA wsaData;
     SOCKET s;
 	int status,statusSocket, port;
 	char* ipaddr;
     SOCKADDR_IN ServerAddr;
 	int nseqaux;
+
 	//Variáveis Threads Secundárias
 	int j;
 	HANDLE hThread[2];
 	DWORD dwRet;
 	DWORD dwThreadTeclado, dwThreadOPC;
 	DWORD dwExitCode = 0;
+
 	//Evento ACK
 	HANDLE hACK99;
 	hACK99 = CreateEvent(NULL, FALSE, FALSE, L"EventoACK99");
@@ -94,12 +98,17 @@ int main(int argc, char **argv)
 	hThread[1] = (HANDLE)_beginthreadex(NULL, 0, (CAST_FUNCTION)OPCClient, NULL, 0, (CAST_LPDWORD)&dwThreadOPC);
 	if (hThread[1]) 	cout << "Thread do OPC Client criada com Id=" << dwThreadOPC << "\n";
 
-	//Criação do Temporizador//
+	//Crianção dos Eventos de encerramento e de solicitação 
+	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
+	hEventoP = CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+
+	//Criação do Temporizador
 	hTimer=CreateWaitableTimer(NULL, FALSE, L"Timer");
 	//Present.QuadPart = -(10000 * 200);
 	//status = SetWaitableTimer(hTimer, &Present, 500, NULL, NULL, FALSE);
 
-	//Criação das mensagens//
+
+	//Criação das mensagens
 	char msgstatus[TAMSTATUS + 1]= "NNNNNN$11$NNNNNN$NNNN.N$NNNN.N$NNNN.N";
 	char msgack99[TAMACK + 1] = "NNNNNN$99";
 	char msgreq[TAMREQ + 1] = "NNNNNN$33";
@@ -107,7 +116,6 @@ int main(int argc, char **argv)
 	char msgack22[TAMACK + 1];
 	char buf[100];
 
-	
 	// Verifica se o que foi passado na linha de comando está correto
 	if (argc != 3) {
 		printf("User: TrabalhoSDA <IP> <port>\n");
@@ -131,205 +139,225 @@ int main(int argc, char **argv)
 	ServerAddr.sin_port = htons(port);
 	ServerAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
+	DWORD ret;
+    int encerramento = 1;
+	HANDLE hEvento = hEventoESC;
 	do{
-		// Criação do Socket
-		s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		//Mensagens de erro
-		if (s == INVALID_SOCKET) {
-			statusSocket = WSAGetLastError();
-			if (statusSocket == WSAENETDOWN) {
-				printf("Rede ou servidor de sockets inacessíveis!\n");
-			}
-			else {
-				printf("Codigo de erro = %d\n", statusSocket);
-			}
-			WSACleanup();
-			exit(0);
-		}
-		// Estabelece a conexão com o servidor
-		printf("Iniciando conexao com o Sistema de Mapeamento 3D...\n");
-		statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
-		if (statusSocket == SOCKET_ERROR) {
-			if (WSAGetLastError() == WSAEHOSTUNREACH) {
-				printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
-				/*else {
-					Sleep(5000);
-					continue;
-				}*/
-			}
-			else {
-				printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
-				WSACleanup();
-				closesocket(s);
-				exit(0);
-			}
+		
+		ret = WaitForSingleObject(hEvento, 100);
+		encerramento = ret - WAIT_OBJECT_0;
+		
+
+		if (encerramento == 0) {
+			break;
 		}
 		else {
-			cout << "Conexao com o Sistema de Mapeamento 3D (servidor) efetuada com sucesso" << endl;
-		}
-		while (Tecla!=ESC) {
-			int tipo;
-			DWORD ret;
-			HANDLE hEventos[3];
-			hEventos[0] = hTimer;
-			hEventos[1] = hEventoP;
-			hEventos[2] = hACK99;
-
-
-			ret = WaitForMultipleObjects(3,hEventos,FALSE,INFINITE);
-			tipo = ret - WAIT_OBJECT_0;
-			
-			//printf("Tipo é %d\n", tipo);
-			//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
-			
-			if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
-				nseq++;
-				if (nseq == 99999) {
-					nseq = 1;
-				}
-
-				//chamar nossa função para conseguir arrumar a msg pos pra envia-la
-	
-				statusSocket = send(s, msgstatus, TAMSTATUS, 0);
-				if (statusSocket == TAMSTATUS) {
-					printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+			// Criação do Socket
+			s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+			//Mensagens de erro
+			if (s == INVALID_SOCKET) {
+				statusSocket = WSAGetLastError();
+				if (statusSocket == WSAENETDOWN) {
+					printf("Rede ou servidor de sockets inacessíveis!\n");
 				}
 				else {
-					if (statusSocket == 0)
-						cout << "Algum tipo de erro inesperado ocorreu" << endl;
-					else if (statusSocket == SOCKET_ERROR) {
-						statusSocket = WSAGetLastError();
-						printf("Falha no envio da mensagem tipo 11 codigo de erro = %d\n", statusSocket);
-					}
-					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
-					break;
+					printf("Codigo de erro = %d\n", statusSocket);
 				}
-				
-				//Aguarda recebimento do ACK22
-				statusSocket = recv(s, buf, TAMACK, 0);
-				sscanf(msgack22, "%6d", &nseqaux);
-				if (++nseq != nseqaux) {
-					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n",nseqaux, nseq);
-					closesocket(s);
+				WSACleanup();
+				exit(0);
+			}
+			// Estabelece a conexão com o servidor
+			printf("Iniciando conexao com o Sistema de Mapeamento 3D...\n");
+			statusSocket = connect(s, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
+			if (statusSocket == SOCKET_ERROR) {
+				if (WSAGetLastError() == WSAEHOSTUNREACH) {
+					printf("Rede inacessivel... aguardando 5s e tentando novamente\n");
+					/*else {
+						Sleep(5000);
+						continue;
+					}*/
+				}
+				else {
+					printf("Falha na conexao ao servidor ! Erro  = %d\n", WSAGetLastError());
 					WSACleanup();
+					closesocket(s);
 					exit(0);
 				}
-				else {
-					nseq = nseqaux;
-					if (strncmp(&buf[7], "22", 2) == !0) {
-						strncpy(msgack22, buf, TAMACK + 1);
-						printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
+			}
+			else {
+				cout << "Conexao com o Sistema de Mapeamento 3D (servidor) efetuada com sucesso" << endl;
+			}
+
+			int tipo = 4;
+
+			do {
+
+
+				HANDLE hEventos[4];
+				hEventos[0] = hTimer;
+				hEventos[1] = hEventoP;
+				hEventos[2] = hACK99;
+				hEventos[3] = hEventoESC;
+
+
+				ret = WaitForMultipleObjects(4, hEventos, FALSE, INFINITE);
+				tipo = ret - WAIT_OBJECT_0;
+
+				//printf("Tipo é %d\n", tipo);
+				//ESPERA PELOS TIPOS DE MENSAGEM DE ACORDO COM OS EVENTOS
+
+				if (tipo == 0) { //Envio da mensagem tipo 11 e recebimento da mensagem tipo 22
+					nseq++;
+					if (nseq == 99999) {
+						nseq = 1;
+					}
+
+					//chamar nossa função para conseguir arrumar a msg pos pra envia-la
+
+					statusSocket = send(s, msgstatus, TAMSTATUS, 0);
+					if (statusSocket == TAMSTATUS) {
+						printf("Mensagem de Status enviada ao Sist. de mapeamento 3D: %s\n\n", msgpos);
 					}
 					else {
-						printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
-						printf("Encerrando o programa...\n");
+						if (statusSocket == 0)
+							cout << "Algum tipo de erro inesperado ocorreu" << endl;
+						else if (statusSocket == SOCKET_ERROR) {
+							statusSocket = WSAGetLastError();
+							printf("Falha no envio da mensagem tipo 11 codigo de erro = %d\n", statusSocket);
+						}
+						printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+						break;
+					}
+
+					//Aguarda recebimento do ACK22
+					statusSocket = recv(s, buf, TAMACK, 0);
+					sscanf(msgack22, "%6d", &nseqaux);
+					if (++nseq != nseqaux) {
+						printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
 						closesocket(s);
 						WSACleanup();
 						exit(0);
 					}
-				}
-
-			}
-			else if (tipo == 1) {// Envio da mensagem 33 recebimento da mensagem 55 e setar evento p/ ACK99
-			//printf("Tipo é %d\n", tipo);
-				nseq++;
-				if (nseq == 99999) {
-					nseq = 1;
-				}
-				//Formatação da mensagem p/ o envio
-				memset(buf, 0, sizeof(buf));
-				sprintf(buf, "%06d", nseq);
-				memcpy(msgreq, buf, 6);
-				statusSocket = send(s, msgreq, TAMREQ, 0);
-				//Verificar status e printar na tela
-				if (statusSocket == TAMREQ) {
-					printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
-				}
-				else {
-					if (statusSocket == 0)
-						cout << "Algum tipo de erro inesperado ocorreu" << endl;
-					else if (statusSocket == SOCKET_ERROR) {
-						statusSocket = WSAGetLastError();
-						printf("Falha no envio da mensagem tipo 22 codigo de erro = %d\n", statusSocket);
-					}
-					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
-					break;
-				}
-				//Recebendo msg 55
-				statusSocket = recv(s, buf, TAMPOS, 0);
-				sscanf(buf, "%6d", &nseqaux);
-				if (++nseq != nseqaux) {
-					
-					printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
-					closesocket(s);
-					WSACleanup();
-					exit(0);
-				}
-				else {
-					if (strncmp(&buf[7], "55", 2) == 0) {
-						cout << "Tamanho buffer" << sizeof(buf) << endl;
+					else {
 						nseq = nseqaux;
-						strncpy(msgpos, buf, TAMPOS+1);
-						printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+						if (strncmp(&buf[7], "22", 2) == !0) {
+							strncpy(msgack22, buf, TAMACK + 1);
+							printf("Mensagem de ACK tipo 22 recebida do Sist. de mapeamento 3D: %s\n\n", msgack22);
+						}
+						else {
+							printf("Codigo incorreto do recebimento do ACK 22, código recebido foi %s\n", &buf[7]);
+							printf("Encerrando o programa...\n");
+							closesocket(s);
+							WSACleanup();
+							exit(0);
+						}
+					}
 
-						string escreve = msgpos;
-
-						//0 0 6 7 3 3 $ 5 5 $ 0  0  0  1  .  0  $  0  0  8  0  0  $  0  0  2  0  5  $  0  0  7  5  0  $  0  8  0  0  .  0
-						//0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
-
-
-
-						
-						varValueW[0].fltVal = stof(escreve.substr(10,6));
-						varValueW[1].intVal = stoi( escreve.substr(17,5));
-						varValueW[2].intVal = stoi(escreve.substr(23,5));
-						varValueW[3].intVal = stoi(escreve.substr(29,5));
-						varValueW[4].fltVal = stof(escreve.substr(35,6));
-						
-
-
-
-
-
-
-						SetEvent(hACK99);
+				}
+				else if (tipo == 1) {// Envio da mensagem 33 recebimento da mensagem 55 e setar evento p/ ACK99
+				//printf("Tipo é %d\n", tipo);
+					nseq++;
+					if (nseq == 99999) {
+						nseq = 1;
+					}
+					//Formatação da mensagem p/ o envio
+					memset(buf, 0, sizeof(buf));
+					sprintf(buf, "%06d", nseq);
+					memcpy(msgreq, buf, 6);
+					statusSocket = send(s, msgreq, TAMREQ, 0);
+					//Verificar status e printar na tela
+					if (statusSocket == TAMREQ) {
+						printf("Mensagem de requisição enviada ao Sist. de mapeamento 3D: %s\n\n", msgreq);
 					}
 					else {
-						printf("Codigo incorreto do recebimento da msg tipo 55, código recebido foi %s\n", &buf[7]);
-						printf("Encerrando o programa...\n");
+						if (statusSocket == 0)
+							cout << "Algum tipo de erro inesperado ocorreu" << endl;
+						else if (statusSocket == SOCKET_ERROR) {
+							statusSocket = WSAGetLastError();
+							printf("Falha no envio da mensagem tipo 22 codigo de erro = %d\n", statusSocket);
+						}
+						printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+						break;
+					}
+					//Recebendo msg 55
+					statusSocket = recv(s, buf, TAMPOS, 0);
+					sscanf(buf, "%6d", &nseqaux);
+					if (++nseq != nseqaux) {
+
+						printf("Numero sequencial de mensagem incorreto [1]: recebido %d ao inves de %d\n", nseqaux, nseq);
+						closesocket(s);
+						WSACleanup();
+						exit(0);
+					}
+					else {
+						if (strncmp(&buf[7], "55", 2) == 0) {
+							cout << "Tamanho buffer" << sizeof(buf) << endl;
+							nseq = nseqaux;
+							strncpy(msgpos, buf, TAMPOS + 1);
+							printf("Mensagem de posicionamento recebida do ao Sist. de mapeamento 3D: %s\n\n", msgpos);
+
+							string escreve = msgpos;
+
+							//0 0 6 7 3 3 $ 5 5 $ 0  0  0  1  .  0  $  0  0  8  0  0  $  0  0  2  0  5  $  0  0  7  5  0  $  0  8  0  0  .  0
+							//0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40
+
+
+
+
+							varValueW[0].fltVal = stof(escreve.substr(10, 6));
+							varValueW[1].intVal = stoi(escreve.substr(17, 5));
+							varValueW[2].intVal = stoi(escreve.substr(23, 5));
+							varValueW[3].intVal = stoi(escreve.substr(29, 5));
+							varValueW[4].fltVal = stof(escreve.substr(35, 6));
+
+
+
+
+
+
+
+							SetEvent(hACK99);
+						}
+						else {
+							printf("Codigo incorreto do recebimento da msg tipo 55, código recebido foi %s\n", &buf[7]);
+							printf("Encerrando o programa...\n");
+						}
 					}
 				}
-			}
-			else if (tipo == 2) {//Envio do ACK99
-				nseq++;
-				if (nseq == 99999) {
-					nseq = 1;
-				}
-				//Formatação da mensagem p/ o envio
-				memset(buf, 0, sizeof(buf));
-				sprintf(buf, "%06d", nseq);
-				memcpy(msgack99, buf, 6);
-				statusSocket = send(s, msgack99, TAMACK, 0);
-				//Verificar status e printar na tela
-				if (statusSocket == TAMACK) {
-					printf("Ack 99 sendo enviado ao Sist. de mapeamento 3D: %s\n\n", msgack99);
-				}
-				else {
-					if (statusSocket == 0)
-						cout << "Algum tipo de erro inesperado ocorreu" << endl;
-					else if (statusSocket == SOCKET_ERROR) {
-						statusSocket = WSAGetLastError();
-						printf("Falha no envio da mensagem tipo 99 codigo de erro = %d\n", statusSocket);
+				else if (tipo == 2) {//Envio do ACK99
+					nseq++;
+					if (nseq == 99999) {
+						nseq = 1;
 					}
-					printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+					//Formatação da mensagem p/ o envio
+					memset(buf, 0, sizeof(buf));
+					sprintf(buf, "%06d", nseq);
+					memcpy(msgack99, buf, 6);
+					statusSocket = send(s, msgack99, TAMACK, 0);
+					//Verificar status e printar na tela
+					if (statusSocket == TAMACK) {
+						printf("Ack 99 sendo enviado ao Sist. de mapeamento 3D: %s\n\n", msgack99);
+					}
+					else {
+						if (statusSocket == 0)
+							cout << "Algum tipo de erro inesperado ocorreu" << endl;
+						else if (statusSocket == SOCKET_ERROR) {
+							statusSocket = WSAGetLastError();
+							printf("Falha no envio da mensagem tipo 99 codigo de erro = %d\n", statusSocket);
+						}
+						printf("Tentando reconexão ..\n\n");//CONFERIR TENTATIVA DE RECONEXÃO
+						break;
+					}
+
+				}
+				else if (tipo == 3) {
 					break;
 				}
 
-			}
-
+			} while (tipo != 3);
 		}
 
-	} while (Tecla != ESC);
+	} while (encerramento != 0);
 
 	printf("Finalizando conexão....\n");
 	closesocket(s);
@@ -349,6 +377,9 @@ int main(int argc, char **argv)
 	//Fechar Handles
 	CloseHandle(hTimer);
 	CloseHandle(hACK99);
+	CloseHandle(hEventoP);
+	CloseHandle(hEventoESC);
+
 	
    
 
@@ -356,9 +387,7 @@ int main(int argc, char **argv)
 }
 
 DWORD WINAPI ThreadTeclado(LPVOID index) {
-	// Eventos
-	hEventoESC = CreateEvent(NULL, TRUE, FALSE, L"EventoESC"); // reset manual
-	hEventoP= CreateEvent(NULL, FALSE, FALSE, L"EventoP"); // reset automatico
+
 
 	int status; 
 	do {
@@ -373,6 +402,7 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 		else if (Tecla == ESC) {
 			status = SetEvent(hEventoESC);
 			cout << "\n Evento ESC ocorreu \n";
+			Sleep(1000);
 		}
 		else {
 			cout << "\n Evento nao cadastrado \n";
@@ -382,10 +412,8 @@ DWORD WINAPI ThreadTeclado(LPVOID index) {
 
 	} while (Tecla != ESC);
 	cout << "Thread leitura do teclado encerrando...\n";
-	_endthreadex((DWORD)index);
-	CloseHandle(hEventoP);
-	CloseHandle(hEventoESC);
 
+	_endthreadex((DWORD)index);
 	return(0);
 
 }
@@ -427,23 +455,20 @@ char* novaMensagem11(int nseq) {
 }
 
 DWORD WINAPI OPCClient(LPVOID index) {
-	HANDLE hEvento = hEventoESC;
-	DWORD ret;
-	int encerramento=1;
 
-
+	opcInit();
 
 	do {
-		ret = WaitForSingleObject(hEvento,100);
-		encerramento= ret - WAIT_OBJECT_0;
-
 
 		for (int i = 0; i < 4; i++) {
 			varValueR[i] = opcClient(varValueW,i);
 		}
-	}while (encerramento != 0);
 
+	}while (Tecla != ESC);
 
+	cout << "Thread OPC encerrando...\n";
+	opcFinish();
+	
 	_endthreadex((DWORD)index);
 	return(0);
 
